@@ -62,3 +62,28 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
     def get_offer_title(self, obj):
         return obj.offer.title
+
+
+        # ============================================
+#        STUDENT PROFILE SERIALIZER
+# ============================================
+from rest_framework import serializers
+from .models import StudentProfile
+
+class StudentProfileSerializer(serializers.ModelSerializer):
+    # Read-only: pulled from the User table automatically
+    full_name = serializers.CharField(source='user.full_name', read_only=True)
+    email     = serializers.EmailField(source='user.email',     read_only=True)
+
+    class Meta:
+        model  = StudentProfile
+        fields = [
+            'full_name',    # from User table (read only)
+            'email',        # from User table (read only)
+            'skills',       # "React, Python, Django..."
+            'github_link',  # URL
+            'wilaya',       # text
+            'university',   # text
+        ]
+
+        

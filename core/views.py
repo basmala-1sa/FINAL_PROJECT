@@ -3,9 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
-from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, CompanyProfile, Offer, Application, Notification
-from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile
+from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer, StudentProfileSerializer
 
 
 # ============================================
@@ -137,43 +137,34 @@ class OfferDetailView(APIView):
         return Response({'is_active': offer.is_active})
 
 
-    # ============================================
+# ============================================
 #           VIEW APPLICANTS
 # ============================================
 @api_view(['GET'])
 def view_applicants(request):
-    # get company_id from request
     company_id = request.data.get('company_id')
-
-    # find all offers that belong to this company
     offers = Offer.objects.filter(company_id=company_id)
-
-    # find all applications for these offers
     applications = Application.objects.filter(offer__in=offers)
-
-    # serialize and return
     serializer = ApplicationSerializer(applications, many=True)
-    return Response(serializer.data)    
+    return Response(serializer.data)
 
-  # ============================================
+
+# ============================================
 #         ACCEPT / REFUSE CANDIDATE
 # ============================================
 @api_view(['PUT'])
 def decide_candidate(request):
     application_id = request.data.get('application_id')
-    decision = request.data.get('decision')  # "accepted" or "refused"
+    decision = request.data.get('decision')
 
     try:
         application = Application.objects.get(id=application_id)
     except Application.DoesNotExist:
-        return Response({'error': 'Application not found!'},
-                        status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Application not found!'}, status=status.HTTP_404_NOT_FOUND)
 
-    # update the application status
     application.status = decision
     application.save()
 
-    # if accepted → notify the ADMIN
     if decision == 'accepted':
         try:
             admin = User.objects.get(role='admin')
@@ -183,14 +174,11 @@ def decide_candidate(request):
             )
         except User.DoesNotExist:
             pass
-
-        # also notify the STUDENT they were accepted
         Notification.objects.create(
             recipient=application.student.user,
             message=f"Congratulations! Your application for '{application.offer.title}' was accepted!"
         )
 
-    # if refused → notify the STUDENT
     if decision == 'refused':
         Notification.objects.create(
             recipient=application.student.user,
@@ -201,4 +189,45 @@ def decide_candidate(request):
         'message': f'Candidate {decision} successfully!',
         'application_id': application_id,
         'status': decision
-    })  
+    })
+
+
+# ============================================
+#        STUDENT PROFILE VIEW
+# ============================================
+class StudentProfileView(APIView):
+
+    def get_user_from_token(self, request):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return None
+        token = auth_header.split(' ')[1]
+        try:
+            decoded  = AccessToken(token)
+            user_id  = decoded['user_id']
+            return User.objects.get(id=user_id)
+        except Exception as e:
+            print('TOKEN ERROR:', e)
+            return None
+
+    def get(self, request):
+        user = self.get_user_from_token(request)
+        if not user:
+            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
+        profile, created = StudentProfile.objects.get_or_create(user=user)
+        serializer = StudentProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def put(self, request):
+        user = self.get_user_from_token(request)
+        if not user:
+            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
+        profile, created = StudentProfile.objects.get_or_create(user=user)
+        serializer = StudentProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Profile updated successfully ✅",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

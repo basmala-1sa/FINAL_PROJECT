@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import StudentProfileView
 
 urlpatterns = [
     path('register/', views.register, name='register'),
@@ -11,4 +12,7 @@ urlpatterns = [
     path('offers/<int:offer_id>/', views.OfferDetailView.as_view(), name='offer-detail'),
     path('company/applicants/', views.view_applicants, name='view-applicants'),
     path('company/decide/', views.decide_candidate, name='decide-candidate'),
+
+    # Student Profile
+    path('profile/', StudentProfileView.as_view(), name='student-profile'),
 ]
