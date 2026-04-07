@@ -15,4 +15,11 @@ urlpatterns = [
 
     # Student Profile
     path('profile/', StudentProfileView.as_view(), name='student-profile'),
+
+
+    # Admin routes
+    path('admin/pending/',  views.admin_pending_internships, name='admin-pending'),
+    path('admin/validate/', views.admin_validate_internship, name='admin-validate'),
+    path('admin/reject/',   views.admin_reject_internship,   name='admin-reject'),
+    path('admin/stats/',    views.admin_statistics,          name='admin-stats'),
 ]

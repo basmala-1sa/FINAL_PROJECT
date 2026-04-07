@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Agreement
 from .models import User, CompanyProfile, Offer, Application, StudentProfile
 
 
@@ -86,4 +87,57 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'university',   # text
         ]
 
-        
+
+
+
+# ============================================
+#        AGREEMENT SERIALIZER
+# ============================================
+class AgreementSerializer(serializers.ModelSerializer):
+    student_name    = serializers.CharField(source='application.student.user.full_name', read_only=True)
+    student_email   = serializers.EmailField(source='application.student.user.email', read_only=True)
+    student_skills  = serializers.CharField(source='application.student.skills', read_only=True)
+    student_wilaya  = serializers.CharField(source='application.student.wilaya', read_only=True)
+    student_university = serializers.CharField(source='application.student.university', read_only=True)
+    company_name    = serializers.CharField(source='application.offer.company.company_name', read_only=True)
+    company_location= serializers.CharField(source='application.offer.company.location', read_only=True)
+    offer_title     = serializers.CharField(source='application.offer.title', read_only=True)
+    validated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Agreement
+        fields = [
+            'id', 'status', 'validated_at', 'pdf_file',
+            'student_name', 'student_email', 'student_skills',
+            'student_wilaya', 'student_university',
+            'company_name', 'company_location', 'offer_title',
+            'validated_by_name',
+        ]
+
+    def get_validated_by_name(self, obj):
+        return obj.validated_by.full_name if obj.validated_by else None
+
+
+class AgreementSerializer(serializers.ModelSerializer):
+    student_name       = serializers.CharField(source='application.student.user.full_name', read_only=True)
+    student_email      = serializers.EmailField(source='application.student.user.email', read_only=True)
+    student_skills     = serializers.CharField(source='application.student.skills', read_only=True)
+    student_wilaya     = serializers.CharField(source='application.student.wilaya', read_only=True)
+    student_university = serializers.CharField(source='application.student.university', read_only=True)
+    company_name       = serializers.CharField(source='application.offer.company.company_name', read_only=True)
+    company_location   = serializers.CharField(source='application.offer.company.location', read_only=True)
+    offer_title        = serializers.CharField(source='application.offer.title', read_only=True)
+    validated_by_name  = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Agreement
+        fields = [
+            'id', 'status', 'validated_at', 'pdf_file',
+            'student_name', 'student_email', 'student_skills',
+            'student_wilaya', 'student_university',
+            'company_name', 'company_location', 'offer_title',
+            'validated_by_name',
+        ]
+
+    def get_validated_by_name(self, obj):
+        return obj.validated_by.full_name if obj.validated_by else None
