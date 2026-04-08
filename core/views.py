@@ -1,4 +1,7 @@
 
+from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer, StudentProfileSerializer
+from .models import StudentProfile
+from .serializers import StudentProfileSerializer
 import os
 from io import BytesIO
 from django.conf import settings
@@ -18,7 +21,7 @@ from rest_framework import status
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile
-from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer, StudentProfileSerializer
+
 
 
 # ============================================
@@ -245,7 +248,45 @@ class StudentProfileView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# ============================================
+#        SEARCH OFFERS
+# ============================================
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Offer
+from .serializers import OfferSerializer
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def offer_list(request):
+    offers = Offer.objects.filter(is_active=True)
+
+    wilaya = request.GET.get('wilaya')
+    skills = request.GET.get('skills')
+    type_  = request.GET.get('type')
+
+    if wilaya:
+        offers = offers.filter(wilaya__icontains=wilaya)
+    if skills:
+        offers = offers.filter(skills__icontains=skills)
+    if type_:
+        offers = offers.filter(type__icontains=type_)
+
+    serializer = OfferSerializer(offers, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def offer_detail(request, pk):
+    try:
+        offer = Offer.objects.get(pk=pk, is_active=True)
+    except Offer.DoesNotExist:
+        return Response({'error': 'Offre introuvable'}, status=404)
+
+    serializer = OfferSerializer(offer)
+    return Response(serializer.data)
  
 
 
@@ -602,4 +643,69 @@ def admin_statistics(request):
             'rejected':  rejected_agreements,
         },
         'top_wilayat': list(top_wilayat),
-    }, status=status.HTTP_200_OK)       
+    }, status=status.HTTP_200_OK)  
+
+    # ============================================
+#           APPLY TO OFFER
+# ============================================
+@api_view(['POST'])
+def apply_to_offer(request):
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return Response({'error': 'Token required'}, status=401)
+    token = auth_header.split(' ')[1]
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken
+        decoded = AccessToken(token)
+        user = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    offer_id = request.data.get('offer_id')
+    try:
+        student = StudentProfile.objects.get(user=user)
+    except StudentProfile.DoesNotExist:
+        return Response({'error': 'Student profile not found'}, status=404)
+
+    try:
+        offer = Offer.objects.get(id=offer_id, is_active=True)
+    except Offer.DoesNotExist:
+        return Response({'error': 'Offer not found'}, status=404)
+
+    if Application.objects.filter(student=student, offer=offer).exists():
+        return Response({'error': 'You already applied to this offer'}, status=400)
+
+    application = Application.objects.create(
+        student=student, offer=offer, status='pending'
+    )
+    return Response({
+        'message': 'Application submitted successfully!',
+        'application_id': application.id,
+        'status': application.status
+    }, status=201)
+
+
+# ============================================
+#           MY APPLICATIONS
+# ============================================
+@api_view(['GET'])
+def my_applications(request):
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return Response({'error': 'Token required'}, status=401)
+    token = auth_header.split(' ')[1]
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken
+        decoded = AccessToken(token)
+        user = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    try:
+        student = StudentProfile.objects.get(user=user)
+    except StudentProfile.DoesNotExist:
+        return Response({'error': 'Student profile not found'}, status=404)
+
+    applications = Application.objects.filter(student=student).order_by('-applied_at')
+    serializer = ApplicationSerializer(applications, many=True)
+    return Response(serializer.data)

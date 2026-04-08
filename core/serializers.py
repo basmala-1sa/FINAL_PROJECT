@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Agreement
-from .models import User, CompanyProfile, Offer, Application, StudentProfile
+from django.contrib.auth.hashers import make_password
+from .models import Agreement, User, CompanyProfile, Offer, Application, StudentProfile
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -9,7 +9,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['full_name', 'email', 'password', 'role']
 
     def create(self, validated_data):
-        from django.contrib.auth.hashers import make_password
         validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
 
@@ -27,13 +26,15 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
 
 class OfferSerializer(serializers.ModelSerializer):
     applicants_count = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source='company.company_name', read_only=True)
+    company_location = serializers.CharField(source='company.location', read_only=True)
 
     class Meta:
         model = Offer
         fields = [
             'id', 'title', 'description', 'skills',
             'wilaya', 'type', 'is_active', 'created_at',
-            'applicants_count'
+            'applicants_count', 'company_name', 'company_location'
         ]
         read_only_fields = ['id', 'created_at', 'applicants_count']
 
@@ -65,72 +66,35 @@ class ApplicationSerializer(serializers.ModelSerializer):
         return obj.offer.title
 
 
-        # ============================================
-#        STUDENT PROFILE SERIALIZER
-# ============================================
-from rest_framework import serializers
-from .models import StudentProfile
-
 class StudentProfileSerializer(serializers.ModelSerializer):
-    # Read-only: pulled from the User table automatically
     full_name = serializers.CharField(source='user.full_name', read_only=True)
-    email     = serializers.EmailField(source='user.email',     read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
-        model  = StudentProfile
+        model = StudentProfile
         fields = [
-            'full_name',    # from User table (read only)
-            'email',        # from User table (read only)
-            'skills',       # "React, Python, Django..."
-            'github_link',  # URL
-            'wilaya',       # text
-            'university',   # text
+            'full_name',
+            'email',
+            'skills',
+            'github_link',
+            'wilaya',
+            'university',
         ]
 
 
-
-
-# ============================================
-#        AGREEMENT SERIALIZER
-# ============================================
 class AgreementSerializer(serializers.ModelSerializer):
-    student_name    = serializers.CharField(source='application.student.user.full_name', read_only=True)
-    student_email   = serializers.EmailField(source='application.student.user.email', read_only=True)
-    student_skills  = serializers.CharField(source='application.student.skills', read_only=True)
-    student_wilaya  = serializers.CharField(source='application.student.wilaya', read_only=True)
+    student_name = serializers.CharField(source='application.student.user.full_name', read_only=True)
+    student_email = serializers.EmailField(source='application.student.user.email', read_only=True)
+    student_skills = serializers.CharField(source='application.student.skills', read_only=True)
+    student_wilaya = serializers.CharField(source='application.student.wilaya', read_only=True)
     student_university = serializers.CharField(source='application.student.university', read_only=True)
-    company_name    = serializers.CharField(source='application.offer.company.company_name', read_only=True)
-    company_location= serializers.CharField(source='application.offer.company.location', read_only=True)
-    offer_title     = serializers.CharField(source='application.offer.title', read_only=True)
+    company_name = serializers.CharField(source='application.offer.company.company_name', read_only=True)
+    company_location = serializers.CharField(source='application.offer.company.location', read_only=True)
+    offer_title = serializers.CharField(source='application.offer.title', read_only=True)
     validated_by_name = serializers.SerializerMethodField()
 
     class Meta:
-        model  = Agreement
-        fields = [
-            'id', 'status', 'validated_at', 'pdf_file',
-            'student_name', 'student_email', 'student_skills',
-            'student_wilaya', 'student_university',
-            'company_name', 'company_location', 'offer_title',
-            'validated_by_name',
-        ]
-
-    def get_validated_by_name(self, obj):
-        return obj.validated_by.full_name if obj.validated_by else None
-
-
-class AgreementSerializer(serializers.ModelSerializer):
-    student_name       = serializers.CharField(source='application.student.user.full_name', read_only=True)
-    student_email      = serializers.EmailField(source='application.student.user.email', read_only=True)
-    student_skills     = serializers.CharField(source='application.student.skills', read_only=True)
-    student_wilaya     = serializers.CharField(source='application.student.wilaya', read_only=True)
-    student_university = serializers.CharField(source='application.student.university', read_only=True)
-    company_name       = serializers.CharField(source='application.offer.company.company_name', read_only=True)
-    company_location   = serializers.CharField(source='application.offer.company.location', read_only=True)
-    offer_title        = serializers.CharField(source='application.offer.title', read_only=True)
-    validated_by_name  = serializers.SerializerMethodField()
-
-    class Meta:
-        model  = Agreement
+        model = Agreement
         fields = [
             'id', 'status', 'validated_at', 'pdf_file',
             'student_name', 'student_email', 'student_skills',

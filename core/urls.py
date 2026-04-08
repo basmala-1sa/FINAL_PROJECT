@@ -22,4 +22,15 @@ urlpatterns = [
     path('admin/validate/', views.admin_validate_internship, name='admin-validate'),
     path('admin/reject/',   views.admin_reject_internship,   name='admin-reject'),
     path('admin/stats/',    views.admin_statistics,          name='admin-stats'),
+
+
+    # Search offers
+    path('api/offers/', views.offer_list, name='offer-list'),
+    path('api/offers/<int:pk>/', views.offer_detail, name='offer-detail-student'),
+
+    # apply to offer
+    path('api/apply/', views.apply_to_offer, name='apply-to-offer'),
+   
+    # my applications
+    path('api/my-applications/', views.my_applications, name='my-applications'), 
 ]
