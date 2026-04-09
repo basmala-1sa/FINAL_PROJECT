@@ -860,3 +860,17 @@ def get_company_reviews(request):
         'total_reviews': reviews.count(),
         'reviews': serializer.data
     })
+
+
+    
+class OfferDetailPublicView(APIView):
+    # GET /api/offers/<id>/detail/ — student views offer → increments views_count
+    def get(self, request, offer_id):
+        try:
+            offer = Offer.objects.get(id=offer_id, is_active=True)
+            offer.views_count += 1
+            offer.save()
+            serializer = OfferSerializer(offer)
+            return Response(serializer.data)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Offer not found'}, status=status.HTTP_404_NOT_FOUND)

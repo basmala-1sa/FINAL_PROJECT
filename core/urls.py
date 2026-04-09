@@ -41,4 +41,5 @@ urlpatterns = [
     # reviews
     path('student/review/', views.leave_review, name='leave-review'),
     path('company/reviews/', views.get_company_reviews, name='company-reviews'),
+    path('offers/<int:offer_id>/detail/', views.OfferDetailPublicView.as_view(), name='offer-public-detail'),
 ]

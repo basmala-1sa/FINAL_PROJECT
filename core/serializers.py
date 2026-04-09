@@ -27,7 +27,8 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
 
 class OfferSerializer(serializers.ModelSerializer):
     applicants_count = serializers.SerializerMethodField()
-    company_name = serializers.CharField(source='company.company_name', read_only=True)
+    days_left        = serializers.SerializerMethodField()
+    company_name     = serializers.CharField(source='company.company_name', read_only=True)
     company_location = serializers.CharField(source='company.location', read_only=True)
 
     class Meta:
@@ -35,12 +36,24 @@ class OfferSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'skills',
             'wilaya', 'type', 'is_active', 'created_at',
-            'applicants_count', 'company_name', 'company_location'
+            'deadline', 'days_left',
+            'applicants_count', 'company_name', 'company_location',
+            'views_count'       # ← ADD THIS
         ]
-        read_only_fields = ['id', 'created_at', 'applicants_count']
+        read_only_fields = ['id', 'created_at', 'applicants_count', 'days_left', 'views_count']
 
     def get_applicants_count(self, obj):
         return Application.objects.filter(offer=obj).count()
+
+    def get_days_left(self, obj):
+        if obj.deadline is None:
+            return None
+        from django.utils import timezone
+        today = timezone.now().date()
+        delta = obj.deadline - today
+        if delta.days < 0:
+            return "Closed"
+        return delta.days
 
 
 class ApplicationSerializer(serializers.ModelSerializer):

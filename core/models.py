@@ -64,6 +64,8 @@ class Offer(models.Model):
     type        = models.CharField(max_length=20, choices=TYPE_CHOICES)
     is_active   = models.BooleanField(default=True)
     created_at  = models.DateTimeField(auto_now_add=True)
+    deadline    = models.DateField(null=True, blank=True)
+    views_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title
