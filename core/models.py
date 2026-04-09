@@ -80,6 +80,7 @@ class Application(models.Model):
     ]
     student    = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
     offer      = models.ForeignKey(Offer, on_delete=models.CASCADE)
+    cover_letter = models.TextField(blank=True)
     status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     applied_at = models.DateTimeField(auto_now_add=True)
 
@@ -120,3 +121,45 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification → {self.recipient.full_name}"
+
+
+# ============================================
+#              SAVED OFFERS TABLE
+# ============================================
+class SavedOffer(models.Model):
+    student  = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    offer    = models.ForeignKey(Offer, on_delete=models.CASCADE)
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'offer')
+        # student cannot save the same offer twice! ✅
+
+    def __str__(self):
+        return f"{self.student.user.full_name} saved {self.offer.title}"       
+
+
+# ============================================
+#              REVIEW TABLE
+# ============================================
+class Review(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+    student    = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    company    = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE)
+    agreement  = models.OneToOneField(Agreement, on_delete=models.CASCADE)
+    rating     = models.IntegerField(choices=RATING_CHOICES)
+    comment    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'company')
+        # student can only review a company once! ✅
+
+    def __str__(self):
+        return f"{self.student.user.full_name} reviewed {self.company.company_name}"

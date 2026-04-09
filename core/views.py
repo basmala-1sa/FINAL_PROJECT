@@ -1,5 +1,4 @@
-
-from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer, StudentProfileSerializer
+from .serializers import RegisterSerializer, LoginSerializer, CompanyProfileSerializer, OfferSerializer, ApplicationSerializer, StudentProfileSerializer, ApplySerializer, ReviewSerializer
 from .models import StudentProfile
 from .serializers import StudentProfileSerializer
 import os
@@ -20,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile
+from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile, SavedOffer, Review
 
 
 
@@ -249,12 +248,12 @@ class StudentProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # ============================================
-#        SEARCH OFFERS
+#        SEARCH OFFERS + RECOMMENDATIONS
 # ============================================
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Offer
+from .models import Offer, StudentProfile
 from .serializers import OfferSerializer
 
 @api_view(['GET'])
@@ -262,9 +261,11 @@ from .serializers import OfferSerializer
 def offer_list(request):
     offers = Offer.objects.filter(is_active=True)
 
+    # filters
     wilaya = request.GET.get('wilaya')
     skills = request.GET.get('skills')
     type_  = request.GET.get('type')
+    search = request.GET.get('search')  # ← added!
 
     if wilaya:
         offers = offers.filter(wilaya__icontains=wilaya)
@@ -272,9 +273,34 @@ def offer_list(request):
         offers = offers.filter(skills__icontains=skills)
     if type_:
         offers = offers.filter(type__icontains=type_)
+    if search:
+        offers = offers.filter(title__icontains=search)  # ← added!
 
-    serializer = OfferSerializer(offers, many=True)
-    return Response(serializer.data)
+    # smart recommendations ← added!
+    try:
+        student        = StudentProfile.objects.get(user=request.user)
+        student_skills = [s.strip() for s in student.skills.split(',')]
+
+        recommended = []
+        others      = []
+
+        for offer in offers:
+            offer_skills = [s.strip() for s in offer.skills.split(',')]
+            match = any(skill in offer_skills for skill in student_skills)
+            if match:
+                recommended.append(offer)
+            else:
+                others.append(offer)
+
+        return Response({
+            'recommended': OfferSerializer(recommended, many=True).data,
+            'others':      OfferSerializer(others, many=True).data
+        })
+
+    except StudentProfile.DoesNotExist:
+        # if no student profile → just return all offers
+        serializer = OfferSerializer(offers, many=True)
+        return Response({'offers': serializer.data})
 
 
 @api_view(['GET'])
@@ -287,7 +313,7 @@ def offer_detail(request, pk):
 
     serializer = OfferSerializer(offer)
     return Response(serializer.data)
- 
+
 
 
 # ============================================
@@ -645,7 +671,7 @@ def admin_statistics(request):
         'top_wilayat': list(top_wilayat),
     }, status=status.HTTP_200_OK)  
 
-    # ============================================
+# ============================================
 #           APPLY TO OFFER
 # ============================================
 @api_view(['POST'])
@@ -661,7 +687,9 @@ def apply_to_offer(request):
     except Exception:
         return Response({'error': 'Invalid token'}, status=401)
 
-    offer_id = request.data.get('offer_id')
+    offer_id     = request.data.get('offer_id')
+    cover_letter = request.data.get('cover_letter', '')  # ← added!
+
     try:
         student = StudentProfile.objects.get(user=user)
     except StudentProfile.DoesNotExist:
@@ -676,14 +704,23 @@ def apply_to_offer(request):
         return Response({'error': 'You already applied to this offer'}, status=400)
 
     application = Application.objects.create(
-        student=student, offer=offer, status='pending'
+        student      = student,
+        offer        = offer,
+        cover_letter = cover_letter,  # ← added!
+        status       = 'pending'
     )
+
+    # notify the company ← added!
+    Notification.objects.create(
+        recipient = offer.company.user,
+        message   = f"New application from {student.user.full_name} for '{offer.title}'"
+    )
+
     return Response({
         'message': 'Application submitted successfully!',
         'application_id': application.id,
         'status': application.status
     }, status=201)
-
 
 # ============================================
 #           MY APPLICATIONS
@@ -709,3 +746,117 @@ def my_applications(request):
     applications = Application.objects.filter(student=student).order_by('-applied_at')
     serializer = ApplicationSerializer(applications, many=True)
     return Response(serializer.data)
+
+
+# ============================================
+#           SAVE / UNSAVE OFFER
+# ============================================
+@api_view(['POST'])
+def save_offer(request):
+    student_id = request.data.get('student_id')
+    offer_id   = request.data.get('offer_id')
+
+    try:
+        student = StudentProfile.objects.get(user_id=student_id)
+        offer   = Offer.objects.get(id=offer_id)
+    except:
+        return Response({'error': 'Student or offer not found!'}, 
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # check if already saved
+    existing = SavedOffer.objects.filter(student=student, offer=offer).first()
+
+    if existing:
+        # already saved → unsave it (toggle)
+        existing.delete()
+        return Response({'message': 'Offer removed from favorites!'})
+    else:
+        # not saved → save it
+        SavedOffer.objects.create(student=student, offer=offer)
+        return Response({'message': 'Offer saved to favorites! ❤️'})
+
+
+# ============================================
+#           GET SAVED OFFERS
+# ============================================
+@api_view(['GET'])
+def get_saved_offers(request):
+    student_id = request.data.get('student_id')
+
+    try:
+        student = StudentProfile.objects.get(user_id=student_id)
+    except StudentProfile.DoesNotExist:
+        return Response({'error': 'Student not found!'}, 
+                        status=status.HTTP_404_NOT_FOUND)
+
+    saved = SavedOffer.objects.filter(student=student)
+    serializer = SavedOfferSerializer(saved, many=True)
+    return Response(serializer.data)
+
+
+# ============================================
+#           LEAVE A REVIEW
+# ============================================
+@api_view(['POST'])
+def leave_review(request):
+    student_id    = request.data.get('student_id')
+    company_id    = request.data.get('company_id')
+    agreement_id  = request.data.get('agreement_id')
+    rating        = request.data.get('rating')
+    comment       = request.data.get('comment')
+
+    try:
+        student   = StudentProfile.objects.get(user_id=student_id)
+        company   = CompanyProfile.objects.get(id=company_id)
+        agreement = Agreement.objects.get(id=agreement_id)
+    except:
+        return Response({'error': 'Student, company or agreement not found!'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # check if already reviewed
+    existing = Review.objects.filter(student=student, company=company).first()
+    if existing:
+        return Response({'error': 'You already reviewed this company!'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # create review
+    Review.objects.create(
+        student   = student,
+        company   = company,
+        agreement = agreement,
+        rating    = rating,
+        comment   = comment
+    )
+
+    return Response({'message': 'Review submitted successfully! ⭐'})
+
+
+# ============================================
+#           GET COMPANY REVIEWS
+# ============================================
+@api_view(['GET'])
+def get_company_reviews(request):
+    company_id = request.data.get('company_id')
+
+    try:
+        company = CompanyProfile.objects.get(id=company_id)
+    except CompanyProfile.DoesNotExist:
+        return Response({'error': 'Company not found!'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    reviews = Review.objects.filter(company=company)
+
+    # calculate average rating
+    if reviews.exists():
+        avg_rating = sum([r.rating for r in reviews]) / reviews.count()
+        avg_rating = round(avg_rating, 1)
+    else:
+        avg_rating = 0
+
+    serializer = ReviewSerializer(reviews, many=True)
+    return Response({
+        'company_name': company.company_name,
+        'average_rating': avg_rating,
+        'total_reviews': reviews.count(),
+        'reviews': serializer.data
+    })

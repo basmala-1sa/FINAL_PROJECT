@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Agreement, User, CompanyProfile, Offer, Application, StudentProfile
+from .models import Agreement, User, CompanyProfile, Offer, Application, StudentProfile, SavedOffer, Review
+
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -104,4 +105,55 @@ class AgreementSerializer(serializers.ModelSerializer):
         ]
 
     def get_validated_by_name(self, obj):
-        return obj.validated_by.full_name if obj.validated_by else None
+        return obj.validated_by.full_name if obj.validated_by else None 
+
+
+class SavedOfferSerializer(serializers.ModelSerializer):
+    offer_title    = serializers.SerializerMethodField()
+    offer_company  = serializers.SerializerMethodField()
+    offer_wilaya   = serializers.SerializerMethodField()
+    offer_type     = serializers.SerializerMethodField()
+    offer_skills   = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SavedOffer
+        fields = ['id', 'offer_id', 'offer_title', 'offer_company',
+                  'offer_wilaya', 'offer_type', 'offer_skills', 'saved_at']
+
+    def get_offer_title(self, obj):
+        return obj.offer.title
+
+    def get_offer_company(self, obj):
+        return obj.offer.company.company_name
+
+    def get_offer_wilaya(self, obj):
+        return obj.offer.wilaya
+
+    def get_offer_type(self, obj):
+        return obj.offer.type
+
+    def get_offer_skills(self, obj):
+        return obj.offer.skills
+
+
+class ApplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['student', 'offer', 'cover_letter']
+
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    student_name   = serializers.SerializerMethodField()
+    company_name   = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Review
+        fields = ['id', 'student_name', 'company_name', 
+                  'rating', 'comment', 'created_at']
+
+    def get_student_name(self, obj):
+        return obj.student.user.full_name
+
+    def get_company_name(self, obj):
+        return obj.company.company_name

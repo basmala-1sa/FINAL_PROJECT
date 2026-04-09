@@ -22,6 +22,8 @@ urlpatterns = [
     path('admin/validate/', views.admin_validate_internship, name='admin-validate'),
     path('admin/reject/',   views.admin_reject_internship,   name='admin-reject'),
     path('admin/stats/',    views.admin_statistics,          name='admin-stats'),
+    path('student/save-offer/', views.save_offer, name='save-offer'),        
+    path('student/saved-offers/', views.get_saved_offers, name='saved-offers'), 
 
 
     # Search offers
@@ -31,6 +33,12 @@ urlpatterns = [
     # apply to offer
     path('api/apply/', views.apply_to_offer, name='apply-to-offer'),
    
+   
     # my applications
     path('api/my-applications/', views.my_applications, name='my-applications'), 
+
+
+    # reviews
+    path('student/review/', views.leave_review, name='leave-review'),
+    path('company/reviews/', views.get_company_reviews, name='company-reviews'),
 ]
