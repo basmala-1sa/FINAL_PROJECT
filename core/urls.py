@@ -1,45 +1,36 @@
 from django.urls import path
 from . import views
-from .views import StudentProfileView
+from .views import StudentProfileView, OfferDetailView, OfferDetailPublicView
 
 urlpatterns = [
+    # Auth
     path('register/', views.register, name='register'),
     path('login/', views.login, name='login'),
-    path('company/profile/', views.company_profile, name='company-profile'),
 
-    # My Offers
-    path('my-offers/', views.MyOffersView.as_view(), name='my-offers'),
-    path('offers/<int:offer_id>/', views.OfferDetailView.as_view(), name='offer-detail'),
+    # Company
+    path('company/profile/', views.company_profile, name='company-profile'),
     path('company/applicants/', views.view_applicants, name='view-applicants'),
     path('company/decide/', views.decide_candidate, name='decide-candidate'),
-
-    # Student Profile
-    path('profile/', StudentProfileView.as_view(), name='student-profile'),
-
-
-    # Admin routes
-    path('admin/pending/',  views.admin_pending_internships, name='admin-pending'),
-    path('admin/validate/', views.admin_validate_internship, name='admin-validate'),
-    path('admin/reject/',   views.admin_reject_internship,   name='admin-reject'),
-    path('admin/stats/',    views.admin_statistics,          name='admin-stats'),
-    path('student/save-offer/', views.save_offer, name='save-offer'),        
-    path('student/saved-offers/', views.get_saved_offers, name='saved-offers'), 
-
-
-    # Search offers
-    path('api/offers/', views.offer_list, name='offer-list'),
-    path('api/offers/<int:pk>/', views.offer_detail, name='offer-detail-student'),
-
-    # apply to offer
-    path('api/apply/', views.apply_to_offer, name='apply-to-offer'),
-   
-   
-    # my applications
-    path('api/my-applications/', views.my_applications, name='my-applications'), 
-
-
-    # reviews
-    path('student/review/', views.leave_review, name='leave-review'),
     path('company/reviews/', views.get_company_reviews, name='company-reviews'),
-    path('offers/<int:offer_id>/detail/', views.OfferDetailPublicView.as_view(), name='offer-public-detail'),
+    path('company/offers/', views.my_offers, name='my-offers'),
+
+    # Offers
+    path('offers/', views.offer_list, name='offer-list'),
+    path('offers/<int:pk>/', views.offer_detail, name='offer-detail'),
+    path('offers/<int:offer_id>/manage/', OfferDetailView.as_view(), name='offer-manage'),
+    path('offers/<int:offer_id>/detail/', OfferDetailPublicView.as_view(), name='offer-public-detail'),
+
+    # Student
+    path('student/profile/', StudentProfileView.as_view(), name='student-profile'),
+    path('student/apply/', views.apply_to_offer, name='apply-to-offer'),
+    path('student/applications/', views.my_applications, name='my-applications'),
+    path('student/save-offer/', views.save_offer, name='save-offer'),
+    path('student/saved-offers/', views.get_saved_offers, name='saved-offers'),
+    path('student/review/', views.leave_review, name='leave-review'),
+
+    # Admin
+    path('admin/pending/', views.admin_pending_internships, name='admin-pending'),
+    path('admin/validate/', views.admin_validate_internship, name='admin-validate'),
+    path('admin/reject/', views.admin_reject_internship, name='admin-reject'),
+    path('admin/stats/', views.admin_statistics, name='admin-stats'),
 ]

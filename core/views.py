@@ -60,7 +60,8 @@ def login(request):
                 'message': 'Login successful!',
                 'token': str(refresh.access_token),
                 'role': user.role,
-                'user_id': user.id
+                'user_id': user.id,
+                'full_name': user.full_name, 
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Wrong password!'}, status=status.HTTP_400_BAD_REQUEST)
@@ -97,22 +98,35 @@ def company_profile(request):
 # ============================================
 #           MY OFFERS VIEW
 # ============================================
-class MyOffersView(APIView):
-    def get(self, request):
-        user_id = request.query_params.get('user_id')
-        company = CompanyProfile.objects.get(user_id=user_id)
+# ============================================
+#           MY OFFERS (COMPANY)
+# ============================================
+@api_view(['GET', 'POST'])
+def my_offers(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        company = CompanyProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token or company not found'}, status=401)
+
+    if request.method == 'GET':
         offers = Offer.objects.filter(company=company)
         serializer = OfferSerializer(offers, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
-        user_id = request.data.get('user_id')
-        company = CompanyProfile.objects.get(user_id=user_id)
+    if request.method == 'POST':
         serializer = OfferSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(company=company)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message': 'Offer created successfully!',
+                'offer': serializer.data
+            }, status=201)
+        return Response(serializer.errors, status=400)
 
 
 # ============================================
@@ -862,7 +876,7 @@ def get_company_reviews(request):
     })
 
 
-    
+
 class OfferDetailPublicView(APIView):
     # GET /api/offers/<id>/detail/ — student views offer → increments views_count
     def get(self, request, offer_id):
