@@ -9,6 +9,7 @@ import AdminStatistics from './pages/AdminStatistics'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -25,9 +26,14 @@ function App() {
         <Route path="/admin/dashboard"   element={<AdminDashboard />} />
         <Route path="/admin/validations" element={<AdminValidations />} />
         <Route path="/admin/statistics"  element={<AdminStatistics />} />
+
+        
       </Routes>
     </BrowserRouter>
   )
 }
 
 export default App
+
+
+

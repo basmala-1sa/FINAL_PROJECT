@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiHome, FiUser, FiList, FiUsers, FiLogOut,
   FiPlus, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight,
   FiMapPin, FiClock, FiUsers as FiApplicants, FiX, FiSave,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+
 
 const colors = {
   navyDark:   "#112250",
@@ -28,82 +29,141 @@ const emptyForm = {
 
 export default function MyOffers() {
   const navigate = useNavigate();
+  const companyName = localStorage.getItem("full_name") || "Company" 
   const [active, setActive]   = useState("offers");
   const [hovered, setHovered] = useState(null);
-  const companyName = localStorage.getItem("full_name") || "Company";
+  
 
-  // Modal state
-  const [showModal, setShowModal]   = useState(false);
-  const [editingOffer, setEditingOffer] = useState(null); // null = create, object = edit
-  const [form, setForm]             = useState(emptyForm);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // offer id to confirm delete
+const [showModal, setShowModal]       = useState(false);
+const [editingOffer, setEditingOffer] = useState(null);
+const [form, setForm]                 = useState(emptyForm);
+const [deleteConfirm, setDeleteConfirm] = useState(null);
+const [offers, setOffers]             = useState([]);
+const [loading, setLoading]           = useState(true);
+const [error, setError]               = useState(null);
 
-  // Fake offers for now (will be replaced by API)
-  const [offers, setOffers] = useState([
-    {
-      id: 1, title: "Frontend Developer Intern", description: "Build beautiful UIs",
-      skills: "React, TailwindCSS", wilaya: "Alger", type: "remote",
-      is_active: true, deadline: "2025-06-30", applicants_count: 4, days_left: 12,
-    },
-    {
-      id: 2, title: "Backend Developer Intern", description: "Work on Django REST APIs",
-      skills: "Python, Django", wilaya: "Oran", type: "presentiel",
-      is_active: false, deadline: "2025-05-15", applicants_count: 7, days_left: "Closed",
-    },
-  ]);
-
-  // ── Handlers ──────────────────────────────────────
-  const openCreate = () => {
-    setEditingOffer(null);
-    setForm(emptyForm);
-    setShowModal(true);
-  };
-
-  const openEdit = (offer) => {
-    setEditingOffer(offer);
-    setForm({
-      title:       offer.title,
-      description: offer.description,
-      skills:      offer.skills,
-      wilaya:      offer.wilaya,
-      type:        offer.type,
-      deadline:    offer.deadline,
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = () => {
-    if (editingOffer) {
-      // Edit existing
-      setOffers(offers.map(o =>
-        o.id === editingOffer.id ? { ...o, ...form } : o
-      ));
-    } else {
-      // Create new
-      setOffers([...offers, {
-        ...form,
-        id: Date.now(),
-        is_active: true,
-        applicants_count: 0,
-        days_left: 0,
-      }]);
+const token   = localStorage.getItem("token")
+const user_id = localStorage.getItem("user_id")
+// Load offers on page open
+useEffect(() => {
+  const fetchOffers = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/company/offers/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      const data = await res.json()
+      if (res.ok) setOffers(data)
+    } catch {
+      setError("Failed to load offers.")
+    } finally {
+      setLoading(false)
     }
-    setShowModal(false);
-  };
+  }
+  fetchOffers()
+}, [])
 
-  const handleDelete = (id) => {
-    setOffers(offers.filter(o => o.id !== id));
-    setDeleteConfirm(null);
-  };
+const openCreate = () => {
+  setEditingOffer(null);
+  setForm(emptyForm);
+  setShowModal(true);
+};
 
-  const handleToggle = (id) => {
-    setOffers(offers.map(o =>
-      o.id === id ? { ...o, is_active: !o.is_active } : o
-    ));
-  };
+const openEdit = (offer) => {
+  setEditingOffer(offer);
+  setForm({
+    title:       offer.title,
+    description: offer.description,
+    skills:      offer.skills,
+    wilaya:      offer.wilaya,
+    type:        offer.type,
+    deadline:    offer.deadline || "",
+  });
+  setShowModal(true);
+};
 
-  const typeLabel = { presentiel: "Présentiel", remote: "Remote", hybride: "Hybride" };
-  const typeColor = { presentiel: "#3C507D", remote: "#5C8A5A", hybride: "#8B6F5E" };
+const handleSave = async () => {
+  try {
+    if (editingOffer) {
+      const res = await fetch(`http://127.0.0.1:8000/api/offers/${editingOffer.id}/manage/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...form, user_id })
+      })
+      const data = await res.json()
+      console.log("EDIT RESPONSE:", data, "STATUS:", res.status)
+      if (res.ok) {
+        setOffers(offers.map(o => o.id === editingOffer.id ? data : o))
+        setShowModal(false)
+      } else {
+        alert("Edit failed: " + JSON.stringify(data))
+      }
+    } else {
+      const res = await fetch("http://127.0.0.1:8000/api/company/offers/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...form })
+      })
+      const data = await res.json()
+      console.log("CREATE RESPONSE:", data, "STATUS:", res.status)
+      if (res.ok) {
+        setOffers([...offers, data.offer])
+        setShowModal(false)
+      } else {
+        alert("Create failed: " + JSON.stringify(data))
+      }
+    }
+  } catch (err) {
+    console.log("FETCH ERROR:", err)
+    alert("Something went wrong: " + err.message)
+  }
+}
+const handleDelete = async (id) => {
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/offers/${id}/manage/`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ user_id })
+    })
+    if (res.ok) {
+      setOffers(offers.filter(o => o.id !== id))
+      setDeleteConfirm(null)
+    }
+  } catch {
+    console.log("Delete failed")
+  }
+}
+const handleToggle = async (id) => {
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/offers/${id}/manage/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ user_id })
+    })
+    const data = await res.json()
+    if (res.ok) setOffers(offers.map(o => o.id === id ? { ...o, is_active: data.is_active } : o))
+  } catch {
+    console.log("Toggle failed")
+  }
+}
+
+const typeLabel = { presentiel: "Présentiel", remote: "Remote", hybride: "Hybride" };
+const typeColor = { presentiel: "#3C507D", remote: "#5C8A5A", hybride: "#8B6F5E" };
 
   return (
     <div style={{
@@ -310,7 +370,16 @@ export default function MyOffers() {
         </div>
 
         {/* Offers Grid */}
-        {offers.length === 0 ? (
+       {/* Offers Grid */}
+{loading ? (
+  <div style={{ textAlign: "center", padding: "80px", color: colors.gold, fontSize: "13px", letterSpacing: "3px" }}>
+    LOADING OFFERS...
+  </div>
+) : error ? (
+  <div style={{ textAlign: "center", padding: "80px", color: "#e05555", fontSize: "13px" }}>
+    {error}
+  </div>
+) : offers.length === 0 ? (
           <div style={{
             background: "#fff", borderRadius: "16px", padding: "60px 20px",
             textAlign: "center", boxShadow: "0 4px 20px rgba(17,34,80,0.07)",

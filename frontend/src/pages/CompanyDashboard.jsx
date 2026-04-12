@@ -25,9 +25,45 @@ export default function CompanyDashboard() {
   const [active, setActive]     = useState("dashboard");
   const [hovered, setHovered]   = useState(null);
   const [visible, setVisible]   = useState(false);
-  const [stats, setStats]       = useState({
-    totalOffers: 5, totalApplications: 12, accepted: 3, pending: 9,
-  });
+ const [stats, setStats] = useState({
+    totalOffers: 0,
+    totalApplications: 0,
+    accepted: 0,
+    pending: 0,
+});
+
+useEffect(() => {
+    const fetchStats = async () => {
+        const user_id = localStorage.getItem("user_id")
+        const token   = localStorage.getItem("token")
+
+        // get offers
+        const offersRes = await fetch(
+            `http://127.0.0.1:8000/api/my-offers/?user_id=${user_id}`,
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+        const offers = await offersRes.json()
+
+        // get applicants
+        const appsRes = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ company_id: user_id })
+        })
+        const apps = await appsRes.json()
+
+        setStats({
+            totalOffers:       offers.length,
+            totalApplications: apps.length,
+            accepted:          apps.filter(a => a.status === "accepted").length,
+            pending:           apps.filter(a => a.status === "pending").length,
+        })
+    }
+    fetchStats()
+}, [])
 
   const companyName = localStorage.getItem("full_name") || "Company";
 

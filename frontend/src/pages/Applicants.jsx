@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiHome, FiUser, FiList, FiUsers, FiLogOut,
   FiCheckCircle, FiXCircle, FiGithub, FiMail,
@@ -21,45 +21,69 @@ const sidebarLinks = [
   { icon: <FiUsers />, label: "Applicants", key: "applicants" },
 ];
 
-// Fake data — will be replaced by API later
-const fakeApplicants = [
-  {
-    id: 1, student_name: "Yacine Boukhedimi", student_email: "yacine@univ.dz",
-    student_skills: "React, Django, Python", student_github: "https://github.com/yacine",
-    offer_title: "Frontend Developer Intern", status: "pending", applied_at: "2025-04-01",
-  },
-  {
-    id: 2, student_name: "Amina Cherif", student_email: "amina@univ.dz",
-    student_skills: "Vue.js, Node.js, MongoDB", student_github: "https://github.com/amina",
-    offer_title: "Frontend Developer Intern", status: "pending", applied_at: "2025-04-03",
-  },
-  {
-    id: 3, student_name: "Rami Bensalem", student_email: "rami@univ.dz",
-    student_skills: "Python, FastAPI, PostgreSQL", student_github: "",
-    offer_title: "Backend Developer Intern", status: "accepted", applied_at: "2025-03-28",
-  },
-  {
-    id: 4, student_name: "Sara Hadj", student_email: "sara@univ.dz",
-    student_skills: "Java, Spring Boot", student_github: "https://github.com/sara",
-    offer_title: "Backend Developer Intern", status: "refused", applied_at: "2025-03-25",
-  },
-];
-
 export default function Applicants() {
-  const navigate   = useNavigate();
-  const [active, setActive]     = useState("applicants");
-  const [hovered, setHovered]   = useState(null);
-  const [filter, setFilter]     = useState("all"); // all | pending | accepted | refused
-  const [applicants, setApplicants] = useState(fakeApplicants);
-  const [confirmModal, setConfirmModal] = useState(null); // { id, decision }
-  const companyName = localStorage.getItem("full_name") || "Company";
+  const navigate = useNavigate();
+  const [active, setActive]       = useState("applicants");
+  const [hovered, setHovered]     = useState(null);
+  const [filter, setFilter]       = useState("all");
+  const [applicants, setApplicants] = useState([]);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [loading, setLoading]     = useState(true);
 
-  const handleDecide = (id, decision) => {
-    setApplicants(applicants.map(a =>
-      a.id === id ? { ...a, status: decision } : a
-    ));
-    setConfirmModal(null);
-  };
+  const companyName = localStorage.getItem("full_name") || "Company";
+  const token       = localStorage.getItem("token");
+  const user_id     = localStorage.getItem("user_id");
+
+  // Load applicants on page open
+  useEffect(() => {
+    const fetchApplicants = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ company_id: user_id })
+        })
+        const data = await res.json()
+        console.log("APPLICANTS:", data)
+        if (res.ok) setApplicants(data)
+      } catch (err) {
+        console.log("Failed to load applicants", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchApplicants()
+  }, [])
+  const handleDecide = async (id, decision) => {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/company/decide/", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        application_id: id,
+        decision: decision
+      })
+    })
+    const data = await res.json()
+    console.log("DECIDE RESPONSE:", data)
+    if (res.ok) {
+      setApplicants(applicants.map(a =>
+        a.id === id ? { ...a, status: decision } : a
+      ))
+      setConfirmModal(null)
+    } else {
+      alert("Error: " + JSON.stringify(data))
+    }
+  } catch (err) {
+    console.log("Decide failed", err)
+  }
+}
 
   const filtered = filter === "all"
     ? applicants
@@ -286,7 +310,9 @@ export default function Applicants() {
             </button>
           ))}
         </div>
+  
 
+  
         {/* Applicant cards */}
         {filtered.length === 0 ? (
           <div style={{

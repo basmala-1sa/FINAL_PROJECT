@@ -64,12 +64,15 @@ export default function Login() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
         localStorage.setItem("user_id", data.user_id);
-        if (data.role === "student") window.location.href = "/student/dashboard";
-        else if (data.role === "company") window.location.href = "/company/dashboard";
+        localStorage.setItem("full_name", data.full_name)  
+        if (data.role === "company") window.location.href = "/company/dashboard";
+        else if (data.role === "student") window.location.href = "/student/dashboard";
         else if (data.role === "admin") window.location.href = "/admin/dashboard";
       } else {
         setError(data.error || "Invalid credentials.");
       }
+
+      
     } catch {
       setError("Cannot connect to server. Check that Django is running.");
     }

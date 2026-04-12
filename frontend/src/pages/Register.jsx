@@ -266,11 +266,12 @@ export default function Register() {
                   {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
               </Field>
-              {form.role === "student" && (
-                <Field label="University" name="university" placeholder="Université d'Alger 1" />
-              )}
+              
               {form.role === "company" && (
                 <Field label="Company name" name="company_name" placeholder="Tech Corp SARL" />
+              )}
+              {form.role === "student" && (
+                <Field label="University" name="university" placeholder="Université d'Alger 1" />
               )}
             </div>
           )}

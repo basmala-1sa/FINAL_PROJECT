@@ -13,7 +13,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from .models import Agreement
 from .serializers import AgreementSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -102,15 +103,19 @@ def company_profile(request):
 #           MY OFFERS (COMPANY)
 # ============================================
 @api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
 def my_offers(request):
+    # decode token manually — same pattern as apply_to_offer
     auth_header = request.headers.get('Authorization', '')
-    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    if not auth_header.startswith('Bearer '):
+        return Response({'error': 'Token required'}, status=401)
+    token = auth_header.split(' ')[1]
 
     try:
         decoded = AccessToken(token)
         user    = User.objects.get(id=decoded['user_id'])
         company = CompanyProfile.objects.get(user=user)
-    except Exception:
+    except Exception as e:
         return Response({'error': 'Invalid token or company not found'}, status=401)
 
     if request.method == 'GET':
@@ -127,8 +132,6 @@ def my_offers(request):
                 'offer': serializer.data
             }, status=201)
         return Response(serializer.errors, status=400)
-
-
 # ============================================
 #         OFFER DETAIL VIEW
 # ============================================
@@ -170,11 +173,21 @@ class OfferDetailView(APIView):
 #           VIEW APPLICANTS
 # ============================================
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def view_applicants(request):
-    company_id = request.data.get('company_id')
-    offers = Offer.objects.filter(company_id=company_id)
+    # read from token instead
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        company = CompanyProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    offers       = Offer.objects.filter(company=company)
     applications = Application.objects.filter(offer__in=offers)
-    serializer = ApplicationSerializer(applications, many=True)
+    serializer   = ApplicationSerializer(applications, many=True)
     return Response(serializer.data)
 
 
@@ -617,6 +630,15 @@ def admin_reject_internship(request):
         recipient=application.student.user,
         message=(
             f"Your internship convention for '{application.offer.title}' was rejected by the administration. "
+            f"Reason: {reason}"
+        )
+    )
+
+    Notification.objects.create(
+        recipient=application.offer.company.user,
+        message=(
+            f"The internship convention for {application.student.user.full_name} "
+            f"applying to '{application.offer.title}' was rejected by the administration. "
             f"Reason: {reason}"
         )
     )
