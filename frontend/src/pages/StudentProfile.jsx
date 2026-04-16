@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./studentLayout";
+import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./StudentLayout";
+import { getProfile } from '../api'
+import { updateProfile } from '../api'
 
 const WILAYAS = [
   "Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Béjaïa","Biskra","Béchar",
@@ -38,24 +40,23 @@ export default function StudentProfile() {
     setFullName(localStorage.getItem("full_name") || "");
     setEmail(localStorage.getItem("email") || "");
 
-    fetch("http://localhost:8000/api/profile/", {
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.skills !== undefined) {
-          const tags = data.skills ? data.skills.split(",").map(s=>s.trim()).filter(Boolean) : [];
-          setTags(tags);
-          setForm({
-            skills:      data.skills      || "",
-            github_link: data.github_link || "",
-            wilaya:      data.wilaya      || "",
-            university:  data.university  || "",
-          });
-        }
-        setLoading(false);
+
+getProfile()
+  .then(res => {
+    const data = res.data
+    if (data.skills !== undefined) {
+      const tags = data.skills ? data.skills.split(",").map(s=>s.trim()).filter(Boolean) : []
+      setTags(tags)
+      setForm({
+        skills:      data.skills      || "",
+        github_link: data.github_link || "",
+        wilaya:      data.wilaya      || "",
+        university:  data.university  || "",
       })
-      .catch(() => setLoading(false));
+    }
+    setLoading(false)
+  })
+  .catch(() => setLoading(false))
   }, []);
 
   // ── Skill tag management ──────────────────────────────────────────────────
@@ -98,21 +99,13 @@ export default function StudentProfile() {
     setMessage(null);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8000/api/profile/", {
-        method: "PUT",
-        headers: { "Authorization":`Bearer ${token}`, "Content-Type":"application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage({ type:"success", text:"Profile updated successfully ✅" });
-      } else {
-        setMessage({ type:"error", text: JSON.stringify(data) });
-      }
-    } catch {
-      setMessage({ type:"error", text:"Network error — is Django running?" });
-    }
-    setSaving(false);
+  const res  = await updateProfile(form)
+  setMessage({ type:"success", text:"Profile updated successfully ✅" })
+} catch (err) {
+  const msg = err.response?.data ? JSON.stringify(err.response.data) : "Network error"
+  setMessage({ type:"error", text: msg })
+}
+setSaving(false)
   };
 
   const handleNav = (key) => {

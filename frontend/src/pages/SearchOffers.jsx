@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./studentLayout";
+import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./StudentLayout";
+import { applyToOffer } from '../api'
+import { searchOffers } from '../api'
+
 
 const WILAYAS = ["Alger","Oran","Constantine","Annaba","Blida","Batna","Sétif","Tizi Ouzou","Béjaïa","Tlemcen","Biskra","Médéa","Ouargla","Skikda","Sidi Bel Abbès","Mostaganem","Boumerdès","Tipaza","Other"];
 const SKILLS_LIST = ["React","Vue.js","Angular","JavaScript","Python","Django","Node.js","PHP","Laravel","Java","MySQL","MongoDB","Docker","Flutter","React Native"];
@@ -24,30 +27,17 @@ export default function SearchOffers() {
   // ── Load offers ───────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:8000/api/offers/", {
-      headers: { "Authorization":`Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : [];
-        setOffers(list);
-        setFiltered(list);
-        setLoading(false);
-      })
-      .catch(() => {
-        // Mock data for UI testing when backend not ready
-        const mock = [
-          { id:1, title:"Frontend Developer Intern", company_name:"Sonatrach",  wilaya:"Alger",    skills_required:"React, JavaScript, CSS",   type:"presentiel", description:"Join our digital team to build modern interfaces." },
-          { id:2, title:"Data Science Intern",        company_name:"Djezzy",     wilaya:"Oran",     skills_required:"Python, Pandas, SQL",       type:"remote",     description:"Analyze telecom data and build predictive models." },
-          { id:3, title:"Backend Developer Intern",   company_name:"Cevital",    wilaya:"Béjaïa",   skills_required:"Django, PostgreSQL, REST API",type:"hybrid",    description:"Develop and maintain backend services." },
-          { id:4, title:"Mobile Dev Intern",          company_name:"Ooredoo",    wilaya:"Alger",    skills_required:"Flutter, Dart, Firebase",   type:"presentiel", description:"Build cross-platform mobile applications." },
-          { id:5, title:"DevOps Intern",              company_name:"Mobilis",    wilaya:"Constantine",skills_required:"Docker, Linux, CI/CD",    type:"remote",     description:"Automate deployment pipelines." },
-          { id:6, title:"UI/UX Design Intern",        company_name:"Algérie Télécom",wilaya:"Alger",skills_required:"Figma, CSS, React",        type:"hybrid",     description:"Design user experiences for national telecom." },
-        ];
-        setOffers(mock);
-        setFiltered(mock);
-        setLoading(false);
-      });
+    searchOffers()
+  .then(res => {
+    const data = res.data
+    const list = Array.isArray(data)
+      ? data
+      : [...(data.recommended || []), ...(data.others || [])]
+    setOffers(list)
+    setFiltered(list)
+    setLoading(false)
+  })
+  .catch(() => setLoading(false))
   }, []);
 
   // ── Filter logic ──────────────────────────────────────────────────────────
@@ -66,18 +56,14 @@ export default function SearchOffers() {
     const token   = localStorage.getItem("token");
     const userId  = localStorage.getItem("user_id");
     try {
-      const res = await fetch("http://localhost:8000/api/apply/", {
-        method: "POST",
-        headers: { "Authorization":`Bearer ${token}`, "Content-Type":"application/json" },
-        body: JSON.stringify({ offer_id: offerId, student_id: userId }),
-      });
-      if (res.ok) {
-        setApplied(prev => [...prev, offerId]);
-        showToast("Application sent successfully! ✅", "success");
-      } else {
-        const data = await res.json();
-        showToast(data.error || "Failed to apply.", "error");
-      }
+      try {
+  await applyToOffer(offerId)
+  setApplied(prev => [...prev, offerId])
+  showToast("Application sent successfully! ✅", "success")
+} catch (err) {
+  const msg = err.response?.data?.error || "Failed to apply."
+  showToast(msg, "error")
+}
     } catch {
       // Mock success for UI testing
       setApplied(prev => [...prev, offerId]);
@@ -224,7 +210,7 @@ export default function SearchOffers() {
 
                   {/* Skills tags */}
                   <div style={{ display:"flex",flexWrap:"wrap",gap:"6px",marginBottom:"18px",flex:1,alignContent:"flex-start" }}>
-                    {(offer.skills_required||"").split(",").filter(Boolean).map(s=>(
+                    {(offer.skills||"").split(",").filter(Boolean).map(s=>(
                       <span key={s} style={{ padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:"bold",background:`rgba(194,160,114,0.12)`,color:colors.sapphire,border:`1px solid rgba(194,160,114,0.25)` }}>
                         {s.trim()}
                       </span>

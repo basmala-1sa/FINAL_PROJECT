@@ -41,6 +41,35 @@ const WILAYAS = [
   "Aïn Témouchent","Ghardaïa","Relizane",
 ];
 
+// ← OUTSIDE Register — fixes the typing bug
+const Field = ({ label, name, type = "text", placeholder, children, form, set, focused, focus, blur }) => (
+  <div style={{ marginBottom: 16 }}>
+    <label style={{
+      display: "block", color: C.sapphire, fontSize: 11, fontWeight: "bold",
+      textTransform: "uppercase", letterSpacing: 1, marginBottom: 6
+    }}>
+      {label}
+    </label>
+    {children || (
+      <input
+        style={{
+          width: "100%", padding: "13px 16px", borderRadius: 10,
+          border: `1.5px solid ${focused[name] ? C.sapphire : C.shell}`,
+          background: "#fff", color: C.royal, fontSize: 14,
+          outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
+          transition: "border-color 0.2s",
+        }}
+        type={type}
+        placeholder={placeholder}
+        value={form[name]}
+        onChange={e => set(name, e.target.value)}
+        onFocus={() => focus(name)}
+        onBlur={() => blur(name)}
+      />
+    )}
+  </div>
+);
+
 export default function Register() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -49,11 +78,16 @@ export default function Register() {
     university: "", github_link: "", skills: "",
     company_name: "", website: "", description: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState("");
+  const [focused, setFocused]   = useState({});
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set   = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const focus = (k)    => setFocused(f => ({ ...f, [k]: true }));
+  const blur  = (k)    => setFocused(f => ({ ...f, [k]: false }));
+
+  const fieldProps = { form, set, focused, focus, blur };
 
   const nextStep = () => {
     setError("");
@@ -72,21 +106,21 @@ export default function Register() {
     try {
       const body = {
         full_name: form.full_name,
-        email: form.email,
-        password: form.password,
-        role: form.role,
+        email:     form.email,
+        password:  form.password,
+        role:      form.role,
       };
-      const res = await fetch("http://127.0.0.1:8000/api/register/", {
+      const res  = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const data = await res.json();
       if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("user_id", data.user_id);
-         localStorage.setItem("full_name", data.full_name);
+        localStorage.setItem("token",     data.token);
+        localStorage.setItem("role",      data.role);
+        localStorage.setItem("user_id",   data.user_id);
+        localStorage.setItem("full_name", data.full_name);
         setSuccess("Account created successfully! Redirecting...");
         setTimeout(() => {
           window.location.href = data.role === "student" ? "/student/dashboard" : "/company/dashboard";
@@ -100,37 +134,15 @@ export default function Register() {
     setLoading(false);
   };
 
-  const inputStyle = (focused) => ({
-    width: "100%", padding: "13px 16px", borderRadius: 10,
-    border: `1.5px solid ${focused ? C.sapphire : C.shell}`,
-    background: "#fff", color: C.royal, fontSize: 14,
-    outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
-    transition: "border-color 0.2s",
-  });
-
-  const [focused, setFocused] = useState({});
-  const focus = (k) => setFocused(f => ({ ...f, [k]: true }));
-  const blur  = (k) => setFocused(f => ({ ...f, [k]: false }));
-
-  const Field = ({ label, name, type = "text", placeholder, children }) => (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: "block", color: C.sapphire, fontSize: 11, fontWeight: "bold",
-        textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{label}</label>
-      {children || (
-        <input style={inputStyle(focused[name])} type={type} placeholder={placeholder}
-          value={form[name]} onChange={e => set(name, e.target.value)}
-          onFocus={() => focus(name)} onBlur={() => blur(name)} />
-      )}
-    </div>
-  );
-
   const progressW = step === 1 ? "33%" : step === 2 ? "66%" : "100%";
 
   return (
     <>
       <style>{fadeIn}</style>
-      <div style={{ minHeight: "100vh", background: C.royal, display: "flex",
-        fontFamily: "Georgia, serif", position: "relative", overflow: "hidden" }}>
+      <div style={{
+        minHeight: "100vh", background: C.royal, display: "flex",
+        fontFamily: "Georgia, serif", position: "relative", overflow: "hidden"
+      }}>
 
         {/* BG decorations */}
         <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%",
@@ -141,35 +153,37 @@ export default function Register() {
           border: `2px solid rgba(224,197,143,0.2)`, top: 120, right: 520, pointerEvents: "none" }} />
 
         {/* LEFT PANEL */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
           alignItems: "center", padding: "48px 40px", position: "relative", zIndex: 1,
-          animation: "slideRight 0.7s ease both" }}>
-
+          animation: "slideRight 0.7s ease both"
+        }}>
           {/* Logo */}
-          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center",
-            gap: 10, marginBottom: 52 }}>
-            <div style={{ width: 38, height: 38, background: C.gold, borderRadius: 10,
+          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 10, marginBottom: 52 }}>
+            <div style={{
+              width: 38, height: 38, background: C.gold, borderRadius: 10,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: "bold", fontSize: 18, color: C.royal, animation: "pulse 2s infinite" }}>S.</div>
+              fontWeight: "bold", fontSize: 18, color: C.royal, animation: "pulse 2s infinite"
+            }}>S.</div>
             <span style={{ color: C.swan, fontSize: 22, fontWeight: "bold", letterSpacing: 1 }}>Stag.io</span>
           </div>
 
           {/* Illustration card */}
-          <div style={{ width: "100%", maxWidth: 360, background: C.sapphire, borderRadius: 24,
-            padding: "44px 32px", display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 20, position: "relative", overflow: "hidden" }}>
+          <div style={{
+            width: "100%", maxWidth: 360, background: C.sapphire, borderRadius: 24,
+            padding: "44px 32px", display: "flex", flexDirection: "column",
+            alignItems: "center", gap: 20, position: "relative", overflow: "hidden"
+          }}>
             <div style={{ position: "absolute", width: 220, height: 220, borderRadius: "50%",
               background: "rgba(255,255,255,0.05)", top: -70, right: -70 }} />
 
             <div style={{ fontSize: 72, animation: "float 3s ease-in-out infinite",
               filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.3))" }}>🎓</div>
 
-            <div style={{ color: C.swan, fontSize: 20, fontWeight: "bold",
-              textAlign: "center", lineHeight: 1.4 }}>
+            <div style={{ color: C.swan, fontSize: 20, fontWeight: "bold", textAlign: "center", lineHeight: 1.4 }}>
               Your internship journey starts here
             </div>
-            <div style={{ color: C.shell, fontSize: 13, textAlign: "center",
-              lineHeight: 1.7, maxWidth: 250 }}>
+            <div style={{ color: C.shell, fontSize: 13, textAlign: "center", lineHeight: 1.7, maxWidth: 250 }}>
               Connect with top Algerian companies. Build your future from day one.
             </div>
 
@@ -178,21 +192,23 @@ export default function Register() {
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 {["Account", "Personal", "Profile"].map((s, i) => (
                   <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: "50%",
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%",
                       background: step > i ? C.gold : "rgba(255,255,255,0.15)",
                       color: step > i ? C.royal : C.shell,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: "bold", transition: "all 0.3s" }}>
+                      fontSize: 12, fontWeight: "bold", transition: "all 0.3s"
+                    }}>
                       {step > i + 1 ? "✓" : i + 1}
                     </div>
-                    <span style={{ fontSize: 10, color: step === i + 1 ? C.gold : C.shell,
-                      transition: "color 0.3s" }}>{s}</span>
+                    <span style={{ fontSize: 10, color: step === i + 1 ? C.gold : C.shell, transition: "color 0.3s" }}>
+                      {s}
+                    </span>
                   </div>
                 ))}
               </div>
               <div style={{ height: 3, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: progressW, background: C.gold,
-                  borderRadius: 4, transition: "width 0.5s ease" }} />
+                <div style={{ height: "100%", width: progressW, background: C.gold, borderRadius: 4, transition: "width 0.5s ease" }} />
               </div>
             </div>
 
@@ -209,10 +225,11 @@ export default function Register() {
         </div>
 
         {/* RIGHT PANEL */}
-        <div style={{ width: 500, display: "flex", flexDirection: "column", justifyContent: "center",
+        <div style={{
+          width: 500, display: "flex", flexDirection: "column", justifyContent: "center",
           padding: "48px 52px", background: C.swan, position: "relative", zIndex: 1,
-          animation: "fadeUp 0.7s ease both", overflowY: "auto", maxHeight: "100vh" }}>
-
+          animation: "fadeUp 0.7s ease both", overflowY: "auto", maxHeight: "100vh"
+        }}>
           <div style={{ color: C.royal, fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
             {step === 1 ? "Create your account" : step === 2 ? "Personal details" : "Complete your profile"}
           </div>
@@ -220,15 +237,12 @@ export default function Register() {
             Step {step} of 3 — {step === 1 ? "Account info" : step === 2 ? "About you" : form.role === "student" ? "Student profile" : "Company profile"}
           </div>
 
-          {error && <div style={{ background: "#fee2e2", color: "#991b1b", borderRadius: 8,
-            padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{error}</div>}
-          {success && <div style={{ background: "#dcfce7", color: "#166534", borderRadius: 8,
-            padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{success}</div>}
+          {error   && <div style={{ background: "#fee2e2", color: "#991b1b", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+          {success && <div style={{ background: "#dcfce7", color: "#166534", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{success}</div>}
 
           {/* STEP 1 */}
           {step === 1 && (
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
-              {/* Role selector */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: "block", color: C.sapphire, fontSize: 11, fontWeight: "bold",
                   textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>I am a</label>
@@ -245,33 +259,38 @@ export default function Register() {
                   ))}
                 </div>
               </div>
-
-              <Field label="Full name *" name="full_name" placeholder="Ahmed Benali" />
-              <Field label="Email address *" name="email" type="email" placeholder="ahmed@univ.dz" />
-              <Field label="Password *" name="password" type="password" placeholder="••••••••" />
-              <Field label="Confirm password *" name="confirm_password" type="password" placeholder="••••••••" />
+              <Field label="Full name *"          name="full_name"         placeholder="Ahmed Benali"    {...fieldProps} />
+              <Field label="Email address *"       name="email"             type="email" placeholder="ahmed@univ.dz" {...fieldProps} />
+              <Field label="Password *"            name="password"          type="password" placeholder="••••••••" {...fieldProps} />
+              <Field label="Confirm password *"    name="confirm_password"  type="password" placeholder="••••••••" {...fieldProps} />
             </div>
           )}
 
           {/* STEP 2 */}
           {step === 2 && (
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
-              <Field label="Phone number" name="phone" type="tel" placeholder="+213 555 00 00 00" />
-              <Field label="Date of birth" name="date_of_birth" type="date" placeholder="" />
-              <Field label="Wilaya *" name="wilaya">
-                <select value={form.wilaya} onChange={e => set("wilaya", e.target.value)}
-                  style={{ ...inputStyle(focused["wilaya"]), cursor: "pointer" }}
-                  onFocus={() => focus("wilaya")} onBlur={() => blur("wilaya")}>
+              <Field label="Phone number"  name="phone"          type="tel"  placeholder="+213 555 00 00 00" {...fieldProps} />
+              <Field label="Date of birth" name="date_of_birth"  type="date" placeholder=""                  {...fieldProps} />
+              <Field label="Wilaya *" name="wilaya" {...fieldProps}>
+                <select
+                  value={form.wilaya} onChange={e => set("wilaya", e.target.value)}
+                  style={{
+                    width: "100%", padding: "13px 16px", borderRadius: 10, cursor: "pointer",
+                    border: `1.5px solid ${focused["wilaya"] ? C.sapphire : C.shell}`,
+                    background: "#fff", color: C.royal, fontSize: 14,
+                    outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
+                  }}
+                  onFocus={() => focus("wilaya")} onBlur={() => blur("wilaya")}
+                >
                   <option value="">Select your wilaya</option>
                   {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
               </Field>
-              
               {form.role === "company" && (
-                <Field label="Company name" name="company_name" placeholder="Tech Corp SARL" />
+                <Field label="Company name" name="company_name" placeholder="Tech Corp SARL" {...fieldProps} />
               )}
               {form.role === "student" && (
-                <Field label="University" name="university" placeholder="Université d'Alger 1" />
+                <Field label="University" name="university" placeholder="Université d'Alger 1" {...fieldProps} />
               )}
             </div>
           )}
@@ -281,30 +300,43 @@ export default function Register() {
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
               {form.role === "student" ? (
                 <>
-                  <Field label="GitHub / Portfolio link" name="github_link" placeholder="https://github.com/username" />
-                  <Field label="Skills (comma separated)" name="skills" placeholder="React, Python, Django, SQL...">
-                    <textarea value={form.skills} onChange={e => set("skills", e.target.value)}
+                  <Field label="GitHub / Portfolio link" name="github_link" placeholder="https://github.com/username" {...fieldProps} />
+                  <Field label="Skills (comma separated)" name="skills" {...fieldProps}>
+                    <textarea
+                      value={form.skills} onChange={e => set("skills", e.target.value)}
                       placeholder="React, Python, Django, SQL..."
-                      style={{ ...inputStyle(focused["skills"]), height: 90, resize: "none" }}
-                      onFocus={() => focus("skills")} onBlur={() => blur("skills")} />
+                      style={{
+                        width: "100%", padding: "13px 16px", borderRadius: 10, height: 90, resize: "none",
+                        border: `1.5px solid ${focused["skills"] ? C.sapphire : C.shell}`,
+                        background: "#fff", color: C.royal, fontSize: 14,
+                        outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
+                      }}
+                      onFocus={() => focus("skills")} onBlur={() => blur("skills")}
+                    />
                   </Field>
                   {form.skills && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, marginTop: -8 }}>
                       {form.skills.split(",").map(s => s.trim()).filter(Boolean).map(s => (
-                        <span key={s} style={{ background: C.royal, color: C.gold,
-                          borderRadius: 20, padding: "3px 12px", fontSize: 12 }}>{s}</span>
+                        <span key={s} style={{ background: C.royal, color: C.gold, borderRadius: 20, padding: "3px 12px", fontSize: 12 }}>{s}</span>
                       ))}
                     </div>
                   )}
                 </>
               ) : (
                 <>
-                  <Field label="Website" name="website" placeholder="https://company.dz" />
-                  <Field label="Description" name="description">
-                    <textarea value={form.description} onChange={e => set("description", e.target.value)}
+                  <Field label="Website" name="website" placeholder="https://company.dz" {...fieldProps} />
+                  <Field label="Description" name="description" {...fieldProps}>
+                    <textarea
+                      value={form.description} onChange={e => set("description", e.target.value)}
                       placeholder="Brief description of your company..."
-                      style={{ ...inputStyle(focused["description"]), height: 100, resize: "none" }}
-                      onFocus={() => focus("description")} onBlur={() => blur("description")} />
+                      style={{
+                        width: "100%", padding: "13px 16px", borderRadius: 10, height: 100, resize: "none",
+                        border: `1.5px solid ${focused["description"] ? C.sapphire : C.shell}`,
+                        background: "#fff", color: C.royal, fontSize: 14,
+                        outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
+                      }}
+                      onFocus={() => focus("description")} onBlur={() => blur("description")}
+                    />
                   </Field>
                 </>
               )}
@@ -324,7 +356,7 @@ export default function Register() {
               <button onClick={nextStep} style={{
                 flex: 2, padding: "14px 0", borderRadius: 12, border: "none",
                 background: C.royal, color: C.gold, fontSize: 15, fontWeight: "bold",
-                cursor: "pointer", fontFamily: "Georgia, serif", transition: "opacity 0.2s",
+                cursor: "pointer", fontFamily: "Georgia, serif",
               }}>Continue →</button>
             ) : (
               <button onClick={handleSubmit} disabled={loading} style={{
@@ -334,9 +366,13 @@ export default function Register() {
                 fontFamily: "Georgia, serif", display: "flex", alignItems: "center",
                 justifyContent: "center", gap: 10,
               }}>
-                {loading && <span style={{ width: 16, height: 16, border: `2px solid ${C.gold}`,
-                  borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite",
-                  display: "inline-block" }} />}
+                {loading && (
+                  <span style={{
+                    width: 16, height: 16, border: `2px solid ${C.gold}`,
+                    borderTopColor: "transparent", borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite", display: "inline-block"
+                  }} />
+                )}
                 {loading ? "Creating account..." : "Create account →"}
               </button>
             )}

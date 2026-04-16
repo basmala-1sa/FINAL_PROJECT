@@ -1,28 +1,51 @@
 import { useState, useEffect } from "react";
-import { colors, GLOBAL_STYLES, Sidebar, StatCard, PageShell } from "./studentLayout";
+import { colors, GLOBAL_STYLES, Sidebar, StatCard, PageShell } from "./StudentLayout";
+
 
 export default function StudentDashboard() {
   const [active, setSidebar]   = useState("dashboard");
   const [sidebarOpen, setOpen] = useState(false);
-  const [visible, setVisible]  = useState(false);
-  const name = localStorage.getItem("full_name") || "Student";
-  const firstName = name.split(" ")[0];
+ const [visible, setVisible] = useState(false);
+const name      = localStorage.getItem("full_name") || "Student";
+const firstName = name.split(" ")[0];
+const token     = localStorage.getItem("token");
 
-  useEffect(() => { setTimeout(() => setVisible(true), 100); }, []);
+const [stats, setStats]   = useState([
+  { icon: "💼", label: "Offers Available",  value: "…" },
+  { icon: "📤", label: "Applications Sent", value: "…" },
+  { icon: "✅", label: "Accepted",           value: "…" },
+  { icon: "⏳", label: "Pending",            value: "…" },
+]);
+const [recent, setRecent] = useState([]);
 
-  const stats = [
-    { icon: "💼", label: "Offers Available",   value: 24 },
-    { icon: "📤", label: "Applications Sent",  value: 6  },
-    { icon: "✅", label: "Accepted",            value: 2  },
-    { icon: "⏳", label: "Pending",             value: 4  },
-  ];
+useEffect(() => { setTimeout(() => setVisible(true), 100); }, []);
 
-  const recent = [
-    { company:"Sonatrach",  role:"Frontend Developer Intern", status:"accepted", date:"Apr 5"  },
-    { company:"Djezzy",     role:"Data Science Intern",       status:"pending",  date:"Apr 3"  },
-    { company:"Cevital",    role:"Backend Developer Intern",  status:"refused",  date:"Mar 28" },
-    { company:"Ooredoo",    role:"Mobile Dev Intern",         status:"pending",  date:"Mar 22" },
-  ];
+// fetch real data from backend
+useEffect(() => {
+  // fetch applications
+  fetch("http://127.0.0.1:8000/api/student/applications/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(apps => {
+      if (!Array.isArray(apps)) return;
+      setStats([
+        { icon: "💼", label: "Offers Available",  value: "—"  },
+        { icon: "📤", label: "Applications Sent", value: apps.length },
+        { icon: "✅", label: "Accepted",           value: apps.filter(a => a.status === "accepted").length  },
+        { icon: "⏳", label: "Pending",            value: apps.filter(a => a.status === "pending").length   },
+      ]);
+      setRecent(
+        apps.slice(0, 4).map(a => ({
+          company: a.offer_title,
+          role:    a.offer_title,
+          status:  a.status,
+          date:    new Date(a.applied_at).toLocaleDateString(),
+        }))
+      );
+    })
+    .catch(() => {});
+}, [token]);
 
   const statusStyle = (s) => ({
     accepted: { bg:"#dcfce7", color:"#16a34a" },

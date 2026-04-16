@@ -9,6 +9,14 @@ import AdminStatistics from './pages/AdminStatistics'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
+import StudentDashboard  from './pages/StudentDashboard'
+import StudentProfile    from './pages/StudentProfile'
+import SearchOffers      from './pages/SearchOffers'
+import MyApplications    from './pages/MyApplications'
+import StudentLayout     from './pages/StudentLayout'
+
+
+
 
 function App() {
   return (
@@ -26,6 +34,14 @@ function App() {
         <Route path="/admin/dashboard"   element={<AdminDashboard />} />
         <Route path="/admin/validations" element={<AdminValidations />} />
         <Route path="/admin/statistics"  element={<AdminStatistics />} />
+        <Route path="/student/dashboard"  element={<StudentDashboard />} />
+
+        <Route path="/student/dashboard"    element={<StudentDashboard />} />
+        <Route path="/student/profile"   element={<StudentProfile />} />
+        <Route path="/student/offers"       element={<SearchOffers />}     />
+        <Route path="/student/applications" element={<MyApplications />}   />
+        <Route path="/student/layout" element={<StudentLayout />}   />
+
 
         
       </Routes>
