@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { colors, GLOBAL_STYLES, Sidebar, StatCard, PageShell } from "./StudentLayout";
+import { FiUser, FiSearch, FiFileText, FiClock, FiCheckCircle, FiSend, FiBriefcase } from "react-icons/fi";
+
 
 
 export default function StudentDashboard() {
@@ -10,11 +12,11 @@ const name      = localStorage.getItem("full_name") || "Student";
 const firstName = name.split(" ")[0];
 const token     = localStorage.getItem("token");
 
-const [stats, setStats]   = useState([
-  { icon: "💼", label: "Offers Available",  value: "…" },
-  { icon: "📤", label: "Applications Sent", value: "…" },
-  { icon: "✅", label: "Accepted",           value: "…" },
-  { icon: "⏳", label: "Pending",            value: "…" },
+const [stats, setStats] = useState([
+  { icon: <FiBriefcase size={26}/>, label: "Offers Available",  value: "…" },
+  { icon: <FiSend size={26}/>,      label: "Applications Sent", value: "…" },
+  { icon: <FiCheckCircle size={26}/>, label: "Accepted",        value: "…" },
+  { icon: <FiClock size={26}/>,     label: "Pending",           value: "…" },
 ]);
 const [recent, setRecent] = useState([]);
 
@@ -30,11 +32,11 @@ useEffect(() => {
     .then(apps => {
       if (!Array.isArray(apps)) return;
       setStats([
-        { icon: "💼", label: "Offers Available",  value: "—"  },
-        { icon: "📤", label: "Applications Sent", value: apps.length },
-        { icon: "✅", label: "Accepted",           value: apps.filter(a => a.status === "accepted").length  },
-        { icon: "⏳", label: "Pending",            value: apps.filter(a => a.status === "pending").length   },
-      ]);
+  { icon: <FiBriefcase size={26}/>, label: "Offers Available",  value: "—"  },
+  { icon: <FiSend size={26}/>,      label: "Applications Sent", value: apps.length },
+  { icon: <FiCheckCircle size={26}/>, label: "Accepted",        value: apps.filter(a => a.status === "accepted").length },
+  { icon: <FiClock size={26}/>,     label: "Pending",           value: apps.filter(a => a.status === "pending").length },
+]);
       setRecent(
         apps.slice(0, 4).map(a => ({
           company: a.offer_title,
@@ -61,6 +63,7 @@ useEffect(() => {
       profile:      "/student/profile",
       offers:       "/student/offers",
       applications: "/student/applications",
+      saved:        "/student/saved",
     };
     if (paths[key]) window.location.href = paths[key];
   };
@@ -170,9 +173,9 @@ useEffect(() => {
         {/* Quick actions */}
         <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:"16px",animation:"fadeUp 0.6s ease 0.6s both" }}>
           {[
-            { icon:"👤",label:"Complete your CV",   sub:"Add skills & GitHub",   key:"profile"      },
-            { icon:"🔍",label:"Browse Internships", sub:"Find the perfect role", key:"offers"       },
-            { icon:"📄",label:"Track Applications", sub:"See your status",       key:"applications" },
+            { icon:<FiUser size={24}/>,     label:"Complete your CV",   sub:"Add skills & GitHub",   key:"profile"      },
+{ icon:<FiSearch size={24}/>,   label:"Browse Internships", sub:"Find the perfect role", key:"offers"       },
+{ icon:<FiFileText size={24}/>, label:"Track Applications", sub:"See your status",       key:"applications" },
           ].map((a,i)=>(
             <div key={i} className="card-hover" onClick={()=>handleNav(a.key)} style={{
               background:colors.white,borderRadius:"14px",padding:"22px",cursor:"pointer",

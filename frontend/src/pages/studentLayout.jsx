@@ -1,4 +1,5 @@
 import { useState } from "react";
+import {  FiHeart } from "react-icons/fi";
 import NotificationBell from "./NotificationBell";
 
 export const colors = {
@@ -49,6 +50,7 @@ export const STUDENT_NAV = [
   { key: "profile",      label: "My Profile",      icon: "👤", path: "/student/profile"      },
   { key: "offers",       label: "Search Offers",   icon: "🔍", path: "/student/offers"       },
   { key: "applications", label: "My Applications", icon: "📄", path: "/student/applications" },
+  { icon: <FiHeart />, label: "Saved Offers", key: "saved" },
 ];
 
 // ─── Shared Sidebar component ─────────────────────────────────────────────────
@@ -142,7 +144,12 @@ export function StatCard({ icon, label, value, delay = "0s" }) {
     }}>
       <div style={{ position:"absolute",top:0,right:0,width:"60px",height:"60px",background:"linear-gradient(225deg,rgba(194,160,114,0.15),transparent)",borderBottomLeftRadius:"60px" }}/>
       <div style={{ position:"absolute",top:0,left:0,right:0,height:"3px",background:`linear-gradient(90deg,${colors.gold},${colors.lightGold})`,borderRadius:"16px 16px 0 0" }}/>
-      <div style={{ color:colors.gold, marginBottom:"16px", fontSize:"26px" }}>{icon}</div>
+      
+      {/* ← changed: color wrapper handles both emoji and react-icons */}
+      <div style={{ color:colors.gold, marginBottom:"16px" }}>
+        {icon}
+      </div>
+      
       <div style={{ fontSize:"36px",fontWeight:"bold",color:colors.navyDark,lineHeight:1 }}>{value}</div>
       <div style={{ fontSize:"12px",color:"#999",marginTop:"6px",letterSpacing:".5px" }}>{label}</div>
     </div>

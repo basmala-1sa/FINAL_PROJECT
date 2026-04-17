@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./StudentLayout";
 import { getMyApplications } from '../api'
+import { FiClock, FiCheckCircle, FiXCircle, FiAward, FiInbox, FiSearch } from "react-icons/fi";
 
 
 export default function MyApplications() {
@@ -24,16 +25,40 @@ export default function MyApplications() {
 
   const handleNav = (key) => {
     setSidebar(key); setOpen(false);
-    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications" };
+    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications", saved:"/student/saved" };
     if (paths[key]) window.location.href = paths[key];
   };
 
   const STATUS_CONFIG = {
-    pending:   { label:"Pending",   bg:"rgba(194,160,114,0.15)", color:colors.gold,    icon:"⏳", desc:"Waiting for company response" },
-    accepted:  { label:"Accepted",  bg:"#dcfce7",                color:"#16a34a",      icon:"✅", desc:"Company accepted your application" },
-    refused:   { label:"Refused",   bg:"#fee2e2",                color:"#dc2626",      icon:"❌", desc:"Company declined your application" },
-    validated: { label:"Validated", bg:"#dbeafe",                color:"#2563eb",      icon:"🎓", desc:"Admin validated — internship confirmed!" },
-  };
+  pending:   { 
+    label:"Pending",   
+    bg:"rgba(194,160,114,0.15)", 
+    color:colors.gold,    
+    icon:<FiClock size={13}/>, 
+    desc:"Waiting for company response" 
+  },
+  accepted:  { 
+    label:"Accepted",  
+    bg:"#dcfce7",                
+    color:"#5C8A5A",      
+    icon:<FiCheckCircle size={13}/>, 
+    desc:"Company accepted your application" 
+  },
+  refused:   { 
+    label:"Refused",   
+    bg:"#fee2e2",                
+    color:"#e05555",      
+    icon:<FiXCircle size={13}/>, 
+    desc:"Company declined your application" 
+  },
+  validated: { 
+    label:"Validated", 
+    bg:"#dbeafe",                
+    color:"#2563eb",      
+    icon:<FiAward size={13}/>, 
+    desc:"Admin validated — internship confirmed!" 
+  },
+};
 
   const filtered = filter === "all" ? applications : applications.filter(a => a.status === filter);
 
@@ -58,9 +83,9 @@ export default function MyApplications() {
           {[
             { key:"all",       label:"Total",     value:counts.all,       bg:colors.white,     color:colors.navyDark },
             { key:"pending",   label:"Pending",   value:counts.pending,   bg:"rgba(194,160,114,0.12)", color:colors.gold },
-            { key:"accepted",  label:"Accepted",  value:counts.accepted,  bg:"#dcfce7",        color:"#16a34a" },
-            { key:"refused",   label:"Refused",   value:counts.refused,   bg:"#fee2e2",        color:"#dc2626" },
-            { key:"validated", label:"Validated", value:counts.validated, bg:"#dbeafe",        color:"#2563eb" },
+            { key:"accepted",  label:"Accepted",  value:counts.accepted,  bg:"#dcfce7",        color:"#5C8A5A" },
+            { key:"refused",   label:"Refused",   value:counts.refused,   bg:"#fee2e2",        color:"#e05555" },
+            { key:"validated", label:"Validated", value:counts.validated, bg:"#dbeafe",        color:"#204eb2" },
           ].map(s=>(
             <div key={s.key} onClick={()=>setFilter(s.key)} style={{
               background:s.bg,borderRadius:"14px",padding:"20px",
@@ -105,7 +130,9 @@ export default function MyApplications() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign:"center",padding:"50px 20px",color:"#bbb" }}>
-              <div style={{ fontSize:"40px",marginBottom:"16px" }}>📭</div>
+              <div style={{ color:"#ddd", marginBottom:"16px" }}>
+  <FiInbox size={40}/>
+</div>
               <p style={{ fontSize:"15px",marginBottom:"6px" }}>
                 {filter==="all" ? "No applications yet" : `No ${filter} applications`}
               </p>

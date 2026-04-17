@@ -50,7 +50,7 @@ useEffect(() => {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ user_id: user_id })
+                
             })
             const data = await res.json()
             if (res.ok) {

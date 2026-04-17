@@ -15,6 +15,8 @@ import SearchOffers      from './pages/SearchOffers'
 import MyApplications    from './pages/MyApplications'
 import StudentLayout     from './pages/StudentLayout'
 
+import SavedOffers from './pages/SavedOffers';
+
 
 
 
@@ -41,6 +43,8 @@ function App() {
         <Route path="/student/offers"       element={<SearchOffers />}     />
         <Route path="/student/applications" element={<MyApplications />}   />
         <Route path="/student/layout" element={<StudentLayout />}   />
+
+        <Route path="/student/saved" element={<SavedOffers />} />
 
 
         

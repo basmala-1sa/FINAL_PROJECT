@@ -4,6 +4,7 @@ import { applyToOffer } from '../api'
 import { searchOffers } from '../api'
 
 
+
 const WILAYAS = ["Alger","Oran","Constantine","Annaba","Blida","Batna","Sétif","Tizi Ouzou","Béjaïa","Tlemcen","Biskra","Médéa","Ouargla","Skikda","Sidi Bel Abbès","Mostaganem","Boumerdès","Tipaza","Other"];
 const SKILLS_LIST = ["React","Vue.js","Angular","JavaScript","Python","Django","Node.js","PHP","Laravel","Java","MySQL","MongoDB","Docker","Flutter","React Native"];
 const TYPES = ["All","remote","presentiel","hybrid"];
@@ -17,7 +18,12 @@ export default function SearchOffers() {
   const [loading, setLoading]     = useState(true);
   const [applying, setApplying]   = useState(null); // offer id being applied to
   const [applied, setApplied]     = useState([]);   // offer ids already applied
+  const [saved, setSaved] = useState([]);
   const [toast, setToast]         = useState(null);
+
+  const [coverModal, setCoverModal] = useState(null); // holds the offer when modal is open
+const [coverLetter, setCoverLetter] = useState("");
+const [submitting, setSubmitting] = useState(false);
 
   const [search, setSearch]       = useState("");
   const [wilaya, setWilaya]       = useState("");
@@ -43,6 +49,25 @@ export default function SearchOffers() {
     })
     .catch(() => setLoading(false))
 }, []);
+// load already saved offers
+useEffect(() => {
+    const token = localStorage.getItem("token")
+    fetch(`http://127.0.0.1:8000/api/student/saved-offers/`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+            // ← NO body on GET
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (Array.isArray(data)) {
+            setSaved(data.map(s => s.offer_id))
+        }
+    })
+    .catch(() => {})
+}, [])
 
   // ── Filter logic ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -55,35 +80,77 @@ export default function SearchOffers() {
   }, [search, wilaya, skill, type, offers]);
 
   // ── Apply to offer ────────────────────────────────────────────────────────
-  const handleApply = async (offerId) => {
-    setApplying(offerId);
-    const token   = localStorage.getItem("token");
-    const userId  = localStorage.getItem("user_id");
-    try {
-      try {
-  await applyToOffer(offerId)
-  setApplied(prev => [...prev, offerId])
-  showToast("Application sent successfully! ✅", "success")
-} catch (err) {
-  const msg = err.response?.data?.error || "Failed to apply."
-  showToast(msg, "error")
-}
-    } catch {
-      // Mock success for UI testing
-      setApplied(prev => [...prev, offerId]);
-      showToast("Application sent! ✅ (demo mode)", "success");
-    }
-    setApplying(null);
-  };
+ // opens the modal instead of applying directly
+const handleApply = (offerId) => {
+  setCoverModal(offerId);
+  setCoverLetter("");
+};
 
-  const showToast = (text, type) => {
+// actual submit with cover letter
+const handleSubmitApplication = async () => {
+  if (!coverLetter.trim()) return;
+  setSubmitting(true);
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/student/apply/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        offer_id:     coverModal,
+        cover_letter: coverLetter,
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setApplied(prev => [...prev, coverModal]);
+      showToast("Application sent successfully! ✅", "success");
+      setCoverModal(null);
+      setCoverLetter("");
+    } else {
+      showToast(data.error || "Failed to apply.", "error");
+    }
+  } catch {
+    showToast("Cannot connect to server.", "error");
+  }
+  setSubmitting(false);
+};
+const showToast = (text, type) => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 3500);
-  };
+};
+const handleSave = async (offerId) => {
+    const token = localStorage.getItem("token")
+    try {
+        const res = await fetch("http://127.0.0.1:8000/api/student/save-offer/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ offer_id: offerId })
+            // ← removed student_id, token handles it
+        })
+        const data = await res.json()
+        if (res.ok) {
+            if (saved.includes(offerId)) {
+                setSaved(saved.filter(id => id !== offerId))
+                showToast("Removed from favorites", "error")
+            } else {
+                setSaved([...saved, offerId])
+                showToast("Added to favorites ✦", "success")
+            }
+        }
+    } catch {
+        showToast("Failed to save offer!", "error")
+    }
+}
 
   const handleNav = (key) => {
     setSidebar(key); setOpen(false);
-    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications" };
+    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications", saved:  "/student/saved" };
     if (paths[key]) window.location.href = paths[key];
   };
 
@@ -182,6 +249,7 @@ export default function SearchOffers() {
                   {/* Top accent */}
                   <div style={{ position:"absolute",top:0,left:0,right:0,height:"3px",background:`linear-gradient(90deg,${colors.gold},${colors.lightGold})`,borderRadius:"16px 16px 0 0" }}/>
 
+
                   {/* Header */}
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"14px" }}>
                     <div style={{
@@ -225,28 +293,230 @@ export default function SearchOffers() {
                   <div style={{ height:"1px",background:`linear-gradient(90deg,${colors.gold}33,transparent)`,marginBottom:"16px" }}/>
 
                   {/* Apply button */}
-                  <button className="btn-gold" onClick={()=>!isApplied && handleApply(offer.id)}
-                    disabled={isApplied || isApplying}
-                    style={{
-                      width:"100%",padding:"11px",borderRadius:"10px",border:"none",
-                      cursor:isApplied?"default":"pointer",
-                      background:isApplied
-                        ? "#dcfce7"
-                        : `linear-gradient(135deg,${colors.gold},${colors.lightGold})`,
-                      color:isApplied?"#16a34a":colors.navyDark,
-                      fontSize:"12px",fontWeight:"bold",letterSpacing:"1.5px",
-                      boxShadow:isApplied?"none":`0 4px 14px rgba(194,160,114,0.35)`,
-                      fontFamily:"Georgia,serif",
-                      opacity:isApplying?0.7:1,
-                    }}>
-                    {isApplied ? "✅ APPLIED" : isApplying ? "SENDING…" : "✦ APPLY NOW"}
-                  </button>
+                  {/* Divider */}
+<div style={{ height:"1px",background:`linear-gradient(90deg,${colors.gold}33,transparent)`,marginBottom:"16px" }}/>
+
+{/* Bottom row — Save + Apply */}
+<div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+
+  {/* Save button — elegant bookmark style */}
+  <button
+    onClick={() => handleSave(offer.id)}
+    title={saved.includes(offer.id) ? "Remove from favorites" : "Save to favorites"}
+    style={{
+      width: "42px", height: "42px",
+      borderRadius: "10px", border: "none",
+      cursor: "pointer", flexShrink: 0,
+      background: saved.includes(offer.id)
+        ? `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`
+        : "rgba(194,160,114,0.12)",
+      color: saved.includes(offer.id) ? colors.navyDark : colors.gold,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: "16px",
+      transition: "all 0.25s ease",
+      boxShadow: saved.includes(offer.id) ? `0 4px 14px rgba(194,160,114,0.35)` : "none",
+    }}
+    onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
+    onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+  >
+    {saved.includes(offer.id) ? "✦" : "✧"}
+  </button>
+
+  {/* Apply button */}
+  <button className="btn-gold"
+    onClick={() => !isApplied && handleApply(offer.id)}
+    disabled={isApplied || isApplying}
+    style={{
+      flex: 1, padding: "11px", borderRadius: "10px", border: "none",
+      cursor: isApplied ? "default" : "pointer",
+      background: isApplied
+        ? "#dcfce7"
+        : `linear-gradient(135deg,${colors.gold},${colors.lightGold})`,
+      color: isApplied ? "#16a34a" : colors.navyDark,
+      fontSize: "12px", fontWeight: "bold", letterSpacing: "1.5px",
+      boxShadow: isApplied ? "none" : `0 4px 14px rgba(194,160,114,0.35)`,
+      fontFamily: "Georgia,serif",
+      opacity: isApplying ? 0.7 : 1,
+    }}>
+    {isApplied ? "✅ APPLIED" : isApplying ? "SENDING…" : "✦ APPLY NOW"}
+  </button>
+
+</div>
                 </div>
               );
             })}
           </div>
         )}
       </PageShell>
+      {/* ══════════ COVER LETTER MODAL ══════════ */}
+{coverModal && (
+  <div style={{
+    position: "fixed", inset: 0,
+    background: "rgba(17,34,80,0.6)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: 9999, backdropFilter: "blur(4px)",
+    fontFamily: "Georgia, serif",
+  }}>
+    <div style={{
+      background: "#fff", borderRadius: "20px",
+      padding: "40px", width: "100%", maxWidth: "520px",
+      boxShadow: "0 30px 80px rgba(17,34,80,0.25)",
+      position: "relative", overflow: "hidden",
+      animation: "fadeUp 0.3s ease both",
+    }}>
+
+      {/* Gold top line */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: "3px",
+        background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold})`,
+        borderRadius: "20px 20px 0 0",
+      }} />
+
+      {/* Close button */}
+      <button
+        onClick={() => { setCoverModal(null); setCoverLetter(""); }}
+        style={{
+          position: "absolute", top: "16px", right: "16px",
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: "20px", color: "#aaa", lineHeight: 1,
+        }}
+      >✕</button>
+
+      {/* Header */}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{
+          fontSize: "10px", color: colors.gold,
+          letterSpacing: "2px", marginBottom: "6px",
+        }}>
+          ✦ APPLY TO OFFER
+        </div>
+        <h2 style={{
+          fontSize: "20px", color: colors.navyDark,
+          fontWeight: "bold", margin: "0 0 6px",
+        }}>
+          Why do you want this internship?
+        </h2>
+        <p style={{ fontSize: "13px", color: "#999", margin: 0, lineHeight: 1.6 }}>
+          Write a short cover letter to introduce yourself and explain why you're the right fit. This will be sent directly to the company.
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div style={{
+        height: "1px",
+        background: `linear-gradient(90deg, ${colors.gold}44, transparent)`,
+        marginBottom: "20px",
+      }} />
+
+      {/* Textarea */}
+      <div style={{ marginBottom: "24px" }}>
+        <label style={{
+          display: "block", fontSize: "11px",
+          color: colors.navyDark, letterSpacing: "1px",
+          marginBottom: "8px", fontWeight: "bold",
+        }}>
+          COVER LETTER *
+        </label>
+        <textarea
+          value={coverLetter}
+          onChange={e => setCoverLetter(e.target.value)}
+          placeholder="Dear Hiring Manager,
+
+I am a computer science student at [University] with strong skills in [your skills]. I am very interested in this internship because...
+
+I believe I can contribute to your team by...
+
+Thank you for considering my application."
+          rows={8}
+          style={{
+            width: "100%", padding: "14px 16px",
+            border: `1.5px solid rgba(194,160,114,0.3)`,
+            borderRadius: "12px", fontSize: "13px",
+            fontFamily: "Georgia, serif", color: colors.navyDark,
+            background: "#fdfcfb", resize: "vertical",
+            outline: "none", boxSizing: "border-box",
+            lineHeight: 1.7, transition: "all 0.3s ease",
+          }}
+          onFocus={e => {
+            e.target.style.borderColor = colors.gold;
+            e.target.style.boxShadow = "0 0 0 3px rgba(194,160,114,0.15)";
+          }}
+          onBlur={e => {
+            e.target.style.borderColor = "rgba(194,160,114,0.3)";
+            e.target.style.boxShadow = "none";
+          }}
+        />
+        {/* Character count */}
+        <div style={{
+          textAlign: "right", fontSize: "11px",
+          color: coverLetter.length > 50 ? colors.gold : "#ccc",
+          marginTop: "6px", letterSpacing: "0.3px",
+        }}>
+          {coverLetter.length} characters {coverLetter.length < 50 ? `(min 50)` : "✓"}
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", gap: "12px" }}>
+        <button
+          onClick={() => { setCoverModal(null); setCoverLetter(""); }}
+          style={{
+            flex: 1, padding: "13px",
+            background: "transparent",
+            border: `1.5px solid rgba(17,34,80,0.12)`,
+            borderRadius: "10px", cursor: "pointer",
+            fontSize: "13px", color: "#888",
+            fontFamily: "Georgia, serif",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = colors.gold}
+          onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(17,34,80,0.12)"}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmitApplication}
+          disabled={coverLetter.trim().length < 50 || submitting}
+          style={{
+            flex: 2, padding: "13px",
+            background: coverLetter.trim().length >= 50 && !submitting
+              ? `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`
+              : "#e0d8d0",
+            border: "none", borderRadius: "10px",
+            cursor: coverLetter.trim().length >= 50 && !submitting ? "pointer" : "not-allowed",
+            fontSize: "13px", fontWeight: "bold",
+            color: coverLetter.trim().length >= 50 ? colors.navyDark : "#aaa",
+            fontFamily: "Georgia, serif", letterSpacing: "1px",
+            transition: "all 0.3s ease",
+            display: "flex", alignItems: "center",
+            justifyContent: "center", gap: "8px",
+          }}
+          onMouseEnter={e => {
+            if (coverLetter.trim().length >= 50 && !submitting)
+              e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+        >
+          {submitting ? (
+            <>
+              <span style={{
+                width: "14px", height: "14px",
+                border: `2px solid ${colors.navyDark}`,
+                borderTopColor: "transparent",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+                display: "inline-block",
+              }} />
+              SENDING…
+            </>
+          ) : (
+            "✦ SEND APPLICATION"
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

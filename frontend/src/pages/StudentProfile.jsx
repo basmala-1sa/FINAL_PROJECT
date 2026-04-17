@@ -111,7 +111,7 @@ setSaving(false)
   const handleNav = (key) => {
     setSidebar(key);
     setOpen(false);
-    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications" };
+    const paths = { dashboard:"/student/dashboard", profile:"/student/profile", offers:"/student/offers", applications:"/student/applications", saved:  "/student/saved" };
     if (paths[key]) window.location.href = paths[key];
   };
 
