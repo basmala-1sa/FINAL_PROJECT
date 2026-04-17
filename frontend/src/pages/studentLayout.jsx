@@ -1,4 +1,5 @@
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 
 export const colors = {
   navyDark:   "#112250",
@@ -88,6 +89,7 @@ export function Sidebar({ active, onNavigate, role = "STUDENT PORTAL", nameKey =
         <div style={{ color:colors.offWhite,fontSize:"13px",marginTop:"12px",fontWeight:"bold" }}>{name}</div>
         <div style={{ color:colors.gold,fontSize:"10px",letterSpacing:"2px",marginTop:"2px",opacity:.7 }}>STUDENT</div>
       </div>
+      
 
       {/* Nav */}
       <nav style={{ flex:1, padding:"20px 0" }}>
@@ -150,6 +152,7 @@ export function StatCard({ icon, label, value, delay = "0s" }) {
 // ─── Page shell (topbar + content area) ──────────────────────────────────────
 export function PageShell({ title, subtitle, children, onMenuClick }) {
   return (
+    
     <div style={{ marginLeft:"270px", flex:1, minHeight:"100vh", background:colors.offWhite, fontFamily:"Georgia, serif" }} className="main-shifted">
       {/* Topbar */}
       <div style={{ background:colors.white, padding:"0 36px", height:"64px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 0 rgba(17,34,80,0.07)", position:"sticky", top:0, zIndex:10 }}>
@@ -160,16 +163,26 @@ export function PageShell({ title, subtitle, children, onMenuClick }) {
             {subtitle && <div style={{ fontSize:"11px",color:colors.gold,letterSpacing:"1px",marginTop:"2px" }}>{subtitle}</div>}
           </div>
         </div>
+        
         <div style={{ fontSize:"10px",color:colors.gold,letterSpacing:"2px",border:`1px solid rgba(194,160,114,0.4)`,padding:"6px 14px",borderRadius:"20px" }}>
           ✦ STUDENT
         </div>
+        
       </div>
+      <div style={{
+  display: "flex", justifyContent: "flex-end",
+  marginBottom: "20px",
+}}>
+  <NotificationBell />
+</div>
+      
       {/* Content */}
       <div style={{ padding:"40px 36px" }}>
         <div style={{ height:"2px",background:`linear-gradient(90deg,${colors.gold},${colors.lightGold},transparent)`,marginBottom:"36px",borderRadius:"2px" }}/>
         {children}
       </div>
     </div>
+    
   );
 }
 export default Sidebar;

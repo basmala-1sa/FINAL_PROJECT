@@ -5,6 +5,7 @@ import {
   FiFilter, FiBriefcase,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 const colors = {
   navyDark:   "#112250",
@@ -36,27 +37,28 @@ export default function Applicants() {
 
   // Load applicants on page open
   useEffect(() => {
-    const fetchApplicants = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ company_id: user_id })
-        })
-        const data = await res.json()
-        console.log("APPLICANTS:", data)
-        if (res.ok) setApplicants(data)
-      } catch (err) {
-        console.log("Failed to load applicants", err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchApplicants = async () => {
+    const token = localStorage.getItem("token")
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+        // ← NO body on GET
+      })
+      const data = await res.json()
+      console.log("APPLICANTS:", data)
+      if (res.ok) setApplicants(data)
+    } catch (err) {
+      console.log("Failed to load applicants", err)
+    } finally {
+      setLoading(false)
     }
-    fetchApplicants()
-  }, [])
+  }
+  fetchApplicants()
+}, [])
   const handleDecide = async (id, decision) => {
   try {
     const res = await fetch("http://127.0.0.1:8000/api/company/decide/", {

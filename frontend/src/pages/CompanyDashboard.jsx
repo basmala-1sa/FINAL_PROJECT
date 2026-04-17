@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiBriefcase, FiUsers, FiCheckCircle, FiClock, FiLogOut, FiHome, FiUser, FiList } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 
 
@@ -333,7 +334,14 @@ useEffect(() => {
           background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold}, transparent)`,
           marginBottom: "40px",
           borderRadius: "2px",
+          
         }} />
+        <div style={{
+  display: "flex", justifyContent: "flex-end",
+  marginBottom: "20px",
+}}>
+  <NotificationBell />
+</div>
 
         {/* Header */}
         <div style={{ marginBottom: "40px" }}>

@@ -27,18 +27,22 @@ export default function SearchOffers() {
   // ── Load offers ───────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
-    searchOffers()
-  .then(res => {
-    const data = res.data
-    const list = Array.isArray(data)
-      ? data
-      : [...(data.recommended || []), ...(data.others || [])]
-    setOffers(list)
-    setFiltered(list)
-    setLoading(false)
-  })
-  .catch(() => setLoading(false))
-  }, []);
+    fetch("http://127.0.0.1:8000/api/offers/", {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        const list = Array.isArray(data)
+            ? data
+            : [...(data.recommended || []), ...(data.others || [])]
+        setOffers(list)
+        setFiltered(list)
+        setLoading(false)
+    })
+    .catch(() => setLoading(false))
+}, []);
 
   // ── Filter logic ──────────────────────────────────────────────────────────
   useEffect(() => {

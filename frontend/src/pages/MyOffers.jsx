@@ -5,6 +5,7 @@ import {
   FiMapPin, FiClock, FiUsers as FiApplicants, FiX, FiSave,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 
 const colors = {
@@ -264,6 +265,13 @@ const typeColor = { presentiel: "#3C507D", remote: "#5C8A5A", hybride: "#8B6F5E"
             RECRUITER
           </div>
         </div>
+        <div style={{
+          height: "2px",
+          background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold}, transparent)`,
+          marginBottom: "40px",
+          borderRadius: "2px",
+          
+        }} />
 
         <nav style={{ flex: 1, padding: "20px 0" }}>
           <div style={{ fontSize: "9px", color: colors.gold, letterSpacing: "2px", padding: "0 24px 12px", opacity: 0.5 }}>

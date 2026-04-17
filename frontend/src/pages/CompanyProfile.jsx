@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiSave, FiHome, FiUser, FiList, FiUsers, FiLogOut, FiGlobe, FiMapPin, FiFileText } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 const colors = {
   navyDark:   "#112250",
@@ -38,12 +39,11 @@ export default function CompanyProfile() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const token   = localStorage.getItem("token")
-const user_id = localStorage.getItem("user_id")
-
+  
 useEffect(() => {
     const fetchProfile = async () => {
         try {
+          const token = localStorage.getItem("token") 
             const res = await fetch("http://127.0.0.1:8000/api/company/profile/", {
                 method: "GET",
                 headers: {
@@ -72,6 +72,7 @@ const handleSave = async () => {
     setLoading(true)
     setError("")
     try {
+      const token = localStorage.getItem("token")
         const res = await fetch("http://127.0.0.1:8000/api/company/profile/", {
             method: "PUT",
             headers: {
@@ -79,7 +80,6 @@ const handleSave = async () => {
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
-                user_id:      user_id,
                 company_name: form.company_name,
                 description:  form.description,
                 location:     form.location,
@@ -244,6 +244,7 @@ const handleSave = async () => {
           <div style={{ fontSize: "9px", color: colors.gold, letterSpacing: "2px", padding: "0 24px 12px", opacity: 0.5 }}>
             NAVIGATION
           </div>
+          
           {sidebarLinks.map((link, i) => (
             <div
               key={link.key}
@@ -277,6 +278,7 @@ const handleSave = async () => {
                 }} />
               )}
             </div>
+            
           ))}
         </nav>
 
