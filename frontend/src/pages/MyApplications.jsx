@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./StudentLayout";
 import { getMyApplications } from '../api'
-import { FiClock, FiCheckCircle, FiXCircle, FiAward, FiInbox, FiSearch } from "react-icons/fi";
+import { FiClock, FiCheckCircle, FiXCircle, FiAward, FiInbox, FiSearch, FiFileText } from "react-icons/fi";
 
 
 export default function MyApplications() {
@@ -10,6 +10,20 @@ export default function MyApplications() {
   const [applications, setApps]    = useState([]);
   const [loading, setLoading]      = useState(true);
   const [filter, setFilter]        = useState("all");
+
+  const [agreement, setAgreement] = useState(null)
+
+useEffect(() => {
+  const token = localStorage.getItem("token")
+  fetch("http://127.0.0.1:8000/api/student/agreement/", {
+    headers: { "Authorization": `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.pdf_url) setAgreement(data)
+  })
+  .catch(() => {})
+}, [])
 
   // ── Load applications ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -99,7 +113,48 @@ export default function MyApplications() {
               <div style={{ fontSize:"11px",color:s.color,marginTop:"4px",fontWeight:"bold",letterSpacing:"1px",textTransform:"uppercase" }}>{s.label}</div>
             </div>
           ))}
+
+          
         </div>
+{/* Convention de Stage Banner */}
+{agreement && (
+  <div style={{
+    background: "linear-gradient(135deg, #112250, #1C3160)",
+    borderRadius: "16px", padding: "24px 28px",
+    marginBottom: "28px", position: "relative", overflow: "hidden",
+    animation: "fadeUp 0.5s ease both",
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    flexWrap: "wrap", gap: "16px",
+  }}>
+    <div style={{
+      position: "absolute", top: 0, left: 0, right: 0, height: "3px",
+      background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold})`,
+    }} />
+    <div>
+      <div style={{ fontSize: "10px", color: colors.lightGold, letterSpacing: "2px", marginBottom: "6px" }}>
+        ✦ CONVENTION DE STAGE
+      </div>
+      <div style={{ fontSize: "16px", fontWeight: "bold", color: "#fff", marginBottom: "4px" }}>
+        {agreement.offer_title}
+      </div>
+      <div style={{ fontSize: "12px", color: "#D9CBC2" }}>
+        {agreement.company_name} · Validated
+      </div>
+    </div>
+    <a href={agreement.pdf_url} target="_blank" rel="noreferrer" style={{
+      display: "flex", alignItems: "center", gap: "8px",
+      padding: "12px 24px", borderRadius: "10px",
+      background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
+      color: colors.navyDark, fontSize: "13px", fontWeight: "bold",
+      letterSpacing: "1px", cursor: "pointer", textDecoration: "none",
+      fontFamily: "Georgia, serif",
+    }}>
+      <FiFileText size={16} /> DOWNLOAD PDF
+    </a>
+  </div>
+)}
+
+        
 
         {/* Applications list */}
         <div style={{

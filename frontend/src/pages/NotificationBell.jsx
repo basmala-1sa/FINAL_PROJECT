@@ -172,14 +172,11 @@ export default function NotificationBell() {
                       : n.message.includes("rejected") || n.message.includes("refused") ? "❌"
                       : "📬"}
                   </div>
-
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: "13px", color: colors.navyDark,
-                      lineHeight: 1.5, marginBottom: "4px",
-                    }}>
-                      {n.message}
-                    </div>
+<div style={{ flex: 1 }}>
+  <div style={{ fontSize: "13px", color: colors.navyDark, lineHeight: 1.5, marginBottom: "4px" }}>
+    {n.message.includes("/media/") ? n.message.split("Download your PDF:")[0] : n.message}
+    {n.message.includes("/media/") && <a href={"http://127.0.0.1:8000" + n.message.split("Download your PDF:")[1]?.trim()} target="_blank" rel="noreferrer" style={{ color: colors.gold, fontWeight: "bold", display: "block", marginTop: "4px" }}>✦ Download Convention de Stage PDF</a>}
+  </div>
                     <div style={{ fontSize: "11px", color: "#bbb" }}>
                       {timeAgo(n.created_at)}
                     </div>
@@ -194,7 +191,7 @@ export default function NotificationBell() {
                   )}
                 </div>
               ))
-            )}
+            )}        
           </div>
         </div>
       )}
