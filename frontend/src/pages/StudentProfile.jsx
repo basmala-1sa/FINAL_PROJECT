@@ -51,7 +51,7 @@ getProfile()
         skills:      data.skills      || "",
         github_link: data.github_link || "",
         wilaya:      data.wilaya      || "",
-        university:  data.university  || "",
+        university:  data.university  || "",  // ← this is now the ID
       })
     }
     setLoading(false)
@@ -107,6 +107,15 @@ getProfile()
 }
 setSaving(false)
   };
+
+const [universities, setUniversities] = useState([]);
+
+useEffect(() => {
+  fetch("http://127.0.0.1:8000/api/universities/")
+    .then(res => res.json())
+    .then(data => { if (Array.isArray(data)) setUniversities(data); })
+    .catch(() => {});
+}, []);
 
   const handleNav = (key) => {
     setSidebar(key);
@@ -274,18 +283,26 @@ setSaving(false)
                 </select>
               </div>
               <div>
-                <label style={{ fontSize:"11px",fontWeight:"bold",color:colors.navyDark,letterSpacing:"1px",textTransform:"uppercase",display:"block",marginBottom:"8px" }}>University</label>
-                <input className="inp-field" type="text"
-                  value={form.university}
-                  onChange={e=>setForm(f=>({...f,university:e.target.value}))}
-                  placeholder="USTHB, ESI, USTO…"
-                  style={{
-                    width:"100%",padding:"11px 14px",borderRadius:"10px",
-                    border:`1.5px solid rgba(194,160,114,0.3)`,background:colors.offWhite,
-                    fontSize:"13px",color:colors.navyDark,fontFamily:"Georgia,serif",
-                  }}
-                />
-              </div>
+  <label style={{ fontSize:"11px",fontWeight:"bold",color:colors.navyDark,letterSpacing:"1px",textTransform:"uppercase",display:"block",marginBottom:"8px" }}>University</label>
+  <select
+    className="inp-field"
+    value={form.university}
+    onChange={e => setForm(f => ({ ...f, university: e.target.value }))}
+    style={{
+      width:"100%", padding:"11px 14px", borderRadius:"10px",
+      border:`1.5px solid rgba(194,160,114,0.3)`, background:colors.offWhite,
+      fontSize:"13px", color:form.university ? colors.navyDark : "#bbb",
+      fontFamily:"Georgia,serif", cursor:"pointer",
+    }}
+  >
+    <option value="">Select your university…</option>
+    {universities.map(u => (
+      <option key={u.id} value={u.id}>
+        {u.name} — {u.wilaya}
+      </option>
+    ))}
+  </select>
+</div>
             </div>
 
             {/* Save button */}

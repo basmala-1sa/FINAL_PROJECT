@@ -31,37 +31,46 @@ export default function CompanyDashboard() {
     totalApplications: 0,
     accepted: 0,
     pending: 0,
-});
+})
+const [recentApps, setRecentApps] = useState([]);
+;
 
 useEffect(() => {
     const fetchStats = async () => {
-        const user_id = localStorage.getItem("user_id")
-        const token   = localStorage.getItem("token")
+        const token = localStorage.getItem("token")
 
-        // get offers
-        const offersRes = await fetch(
-            `http://127.0.0.1:8000/api/my-offers/?user_id=${user_id}`,
-            { headers: { "Authorization": `Bearer ${token}` } }
-        )
-        const offers = await offersRes.json()
+        try {
+            // get offers — use token, no user_id needed
+            const offersRes = await fetch(
+                "http://127.0.0.1:8000/api/company/offers/",
+                { headers: { "Authorization": `Bearer ${token}` } }
+            )
+            const offers = await offersRes.json()
 
-        // get applicants
-        const appsRes = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ company_id: user_id })
-        })
-        const apps = await appsRes.json()
+            // get applicants — no body on GET
+            const appsRes = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+                // ← NO body
+            })
+            const apps = await appsRes.json()
 
-        setStats({
-            totalOffers:       offers.length,
-            totalApplications: apps.length,
-            accepted:          apps.filter(a => a.status === "accepted").length,
-            pending:           apps.filter(a => a.status === "pending").length,
-        })
+            setStats({
+                totalOffers:       Array.isArray(offers) ? offers.length : 0,
+                totalApplications: Array.isArray(apps)   ? apps.length   : 0,
+                accepted:          Array.isArray(apps)   ? apps.filter(a => a.status === "accepted").length : 0,
+                pending:           Array.isArray(apps)   ? apps.filter(a => a.status === "pending").length  : 0,
+            })
+            // set recent applications (last 4)
+if (Array.isArray(apps)) {
+    setRecentApps(apps.slice(0, 4))
+}
+        } catch (err) {
+            console.log("Stats error:", err)
+        }
     }
     fetchStats()
 }, [])
@@ -493,25 +502,70 @@ useEffect(() => {
           </div>
 
           {/* Empty state */}
-          <div style={{
-            textAlign: "center",
-            padding: "50px 20px",
-            color: "#bbb",
-          }}>
-            <div style={{
-              width: "70px", height: "70px",
-              borderRadius: "50%",
-              background: "rgba(194,160,114,0.08)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
+          {recentApps.length === 0 ? (
+    <div style={{ textAlign:"center", padding:"50px 20px", color:"#bbb" }}>
+        <div style={{
+            width:"70px", height:"70px", borderRadius:"50%",
+            background:"rgba(194,160,114,0.08)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            margin:"0 auto 16px",
+        }}>
+            <FiBriefcase size={28} style={{ color:colors.gold, opacity:0.4 }} />
+        </div>
+        <p style={{ fontSize:"15px", marginBottom:"6px" }}>No recent activity yet</p>
+        <p style={{ fontSize:"13px", opacity:0.7 }}>Start by posting your first internship offer!</p>
+    </div>
+) : (
+    <div style={{ display:"flex", flexDirection:"column", gap:"0" }}>
+        {recentApps.map((app, i) => (
+            <div key={app.id} style={{
+                display:"flex", alignItems:"center",
+                justifyContent:"space-between",
+                padding:"14px 0",
+                borderBottom:`1px solid rgba(194,160,114,0.1)`,
+                flexWrap:"wrap", gap:"8px",
             }}>
-              <FiBriefcase size={28} style={{ color: colors.gold, opacity: 0.4 }} />
+                <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+                    <div style={{
+                        width:"42px", height:"42px", borderRadius:"10px",
+                        background:`linear-gradient(135deg,rgba(194,160,114,0.15),rgba(194,160,114,0.05))`,
+                        border:`1px solid rgba(194,160,114,0.3)`,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        fontSize:"15px", fontWeight:"bold", color:colors.gold, flexShrink:0,
+                    }}>
+                        {(app.student_name || "?")[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div style={{ fontWeight:"bold", color:colors.navyDark, fontSize:"14px" }}>
+                            {app.student_name}
+                        </div>
+                        <div style={{ fontSize:"12px", color:"#888", marginTop:"2px" }}>
+                            {app.offer_title}
+                        </div>
+                    </div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+                    <span style={{ fontSize:"11px", color:"#bbb" }}>
+                        {new Date(app.applied_at).toLocaleDateString()}
+                    </span>
+                    <span style={{
+                        padding:"4px 14px", borderRadius:"20px",
+                        fontSize:"11px", fontWeight:"bold",
+                        letterSpacing:".5px",
+                        background: app.status === "accepted" ? "#dcfce7"
+                                  : app.status === "refused"  ? "#fee2e2"
+                                  : "rgba(194,160,114,0.15)",
+                        color: app.status === "accepted" ? "#16a34a"
+                             : app.status === "refused"  ? "#dc2626"
+                             : colors.gold,
+                    }}>
+                        {app.status.toUpperCase()}
+                    </span>
+                </div>
             </div>
-            <p style={{ fontSize: "15px", marginBottom: "6px" }}>No recent activity yet</p>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>
-              Start by posting your first internship offer!
-            </p>
-          </div>
+        ))}
+    </div>
+)}
         </div>
 
       </div>

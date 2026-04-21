@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const C = {
   royal: "#112250",
@@ -41,7 +41,6 @@ const WILAYAS = [
   "Aïn Témouchent","Ghardaïa","Relizane",
 ];
 
-// ← OUTSIDE Register — fixes the typing bug
 const Field = ({ label, name, type = "text", placeholder, children, form, set, focused, focus, blur }) => (
   <div style={{ marginBottom: 16 }}>
     <label style={{
@@ -71,44 +70,60 @@ const Field = ({ label, name, type = "text", placeholder, children, form, set, f
 );
 
 export default function Register() {
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
+  const [step, setStep]         = useState(1);
+  const [form, setForm]         = useState({
     full_name: "", email: "", password: "", confirm_password: "",
     role: "student", date_of_birth: "", phone: "", wilaya: "",
     university: "", github_link: "", skills: "",
     company_name: "", website: "", description: "",
   });
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [success, setSuccess]   = useState("");
-  const [focused, setFocused]   = useState({});
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState("");
+  const [success, setSuccess]       = useState("");
+  const [focused, setFocused]       = useState({});
+  const [universities, setUniversities] = useState([]);  // ← NEW
 
   const set   = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const focus = (k)    => setFocused(f => ({ ...f, [k]: true }));
   const blur  = (k)    => setFocused(f => ({ ...f, [k]: false }));
-
   const fieldProps = { form, set, focused, focus, blur };
+
+  // ← NEW: fetch universities on mount
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/universities/")
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setUniversities(data); })
+      .catch(() => {});
+  }, []);
 
   const nextStep = () => {
     setError("");
     if (step === 1) {
-      if (!form.full_name || !form.email || !form.password) return setError("Please fill all required fields.");
-      if (form.password !== form.confirm_password) return setError("Passwords do not match.");
-      if (form.password.length < 6) return setError("Password must be at least 6 characters.");
+      if (!form.full_name || !form.email || !form.password)
+        return setError("Please fill all required fields.");
+      if (form.password !== form.confirm_password)
+        return setError("Passwords do not match.");
+      if (form.password.length < 6)
+        return setError("Password must be at least 6 characters.");
+    }
+    if (step === 2) {
+      if (!form.wilaya) return setError("Please select your wilaya.");
+      if (form.role === "student" && !form.university)
+        return setError("Please select your university.");
     }
     setStep(s => s + 1);
   };
 
   const handleSubmit = async () => {
     setError(""); setSuccess("");
-    if (!form.wilaya) return setError("Please select your wilaya.");
     setLoading(true);
     try {
       const body = {
-        full_name: form.full_name,
-        email:     form.email,
-        password:  form.password,
-        role:      form.role,
+        full_name:     form.full_name,
+        email:         form.email,
+        password:      form.password,
+        role:          form.role,
+        university_id: form.role === "student" ? form.university : null, // ← NEW
       };
       const res  = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
@@ -123,7 +138,9 @@ export default function Register() {
         localStorage.setItem("full_name", data.full_name);
         setSuccess("Account created successfully! Redirecting...");
         setTimeout(() => {
-          window.location.href = data.role === "student" ? "/student/dashboard" : "/company/dashboard";
+          window.location.href = data.role === "student"
+            ? "/student/dashboard"
+            : "/company/dashboard";
         }, 1800);
       } else {
         setError(data.email?.[0] || data.full_name?.[0] || "Registration failed.");
@@ -135,6 +152,13 @@ export default function Register() {
   };
 
   const progressW = step === 1 ? "33%" : step === 2 ? "66%" : "100%";
+
+  const selectStyle = (name) => ({
+    width: "100%", padding: "13px 16px", borderRadius: 10, cursor: "pointer",
+    border: `1.5px solid ${focused[name] ? C.sapphire : C.shell}`,
+    background: "#fff", color: C.royal, fontSize: 14,
+    outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
+  });
 
   return (
     <>
@@ -152,79 +176,166 @@ export default function Register() {
         <div style={{ position: "absolute", width: 80, height: 80, borderRadius: "50%",
           border: `2px solid rgba(224,197,143,0.2)`, top: 120, right: 520, pointerEvents: "none" }} />
 
-        {/* LEFT PANEL */}
-        <div style={{
-          flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
-          alignItems: "center", padding: "48px 40px", position: "relative", zIndex: 1,
-          animation: "slideRight 0.7s ease both"
-        }}>
-          {/* Logo */}
-          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 10, marginBottom: 52 }}>
-            <div style={{
-              width: 38, height: 38, background: C.gold, borderRadius: 10,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: "bold", fontSize: 18, color: C.royal, animation: "pulse 2s infinite"
-            }}>S.</div>
-            <span style={{ color: C.swan, fontSize: 22, fontWeight: "bold", letterSpacing: 1 }}>Stag.io</span>
-          </div>
+        {/* ══════════ LEFT PANEL ══════════ */}
+        {/* ══════════ LEFT PANEL ══════════ */}
+<div style={{
+  flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
+  alignItems: "center", padding: "48px 40px", position: "relative", zIndex: 1,
+  animation: "slideRight 0.7s ease both"
+}}>
+  {/* Logo */}
+  <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 10, marginBottom: 52 }}>
+    <div style={{
+      width: 38, height: 38, background: C.gold, borderRadius: 10,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontWeight: "bold", fontSize: 18, color: C.royal, animation: "pulse 2s infinite"
+    }}>S.</div>
+    <span style={{ color: C.swan, fontSize: 22, fontWeight: "bold", letterSpacing: 1 }}>Stag.io</span>
+  </div>
 
-          {/* Illustration card */}
+  <div style={{
+    width: "100%", maxWidth: 370, background: C.sapphire, borderRadius: 24,
+    padding: "44px 36px", display: "flex", flexDirection: "column",
+    position: "relative", overflow: "hidden",
+  }}>
+    {/* Decorative circles */}
+    <div style={{ position: "absolute", width: 220, height: 220, borderRadius: "50%",
+      background: "rgba(255,255,255,0.04)", top: -70, right: -70 }} />
+    <div style={{ position: "absolute", width: 100, height: 100, borderRadius: "50%",
+      background: "rgba(255,255,255,0.03)", bottom: -20, left: -20 }} />
+
+    {/* Central icon */}
+    <div style={{
+      width: 72, height: 72, borderRadius: 20,
+      background: "linear-gradient(135deg, rgba(224,197,143,0.2), rgba(224,197,143,0.05))",
+      border: `1.5px solid rgba(224,197,143,0.3)`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      marginBottom: 24, animation: "float 3s ease-in-out infinite",
+      alignSelf: "flex-start",
+    }}>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+      </svg>
+    </div>
+
+    {/* Heading */}
+    <div style={{ color: C.swan, fontSize: 20, fontWeight: "bold", lineHeight: 1.3, marginBottom: 8 }}>
+      Start your internship journey
+    </div>
+    <div style={{ color: C.shell, fontSize: 13, lineHeight: 1.7, marginBottom: 28, opacity: 0.85 }}>
+      Join thousands of Algerian students connecting with top companies through a seamless digital platform.
+    </div>
+
+    {/* Gold divider */}
+    <div style={{
+      height: 1,
+      background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)`,
+      marginBottom: 28,
+    }} />
+
+    {/* Step indicators with icons */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
+      {[
+        {
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          ),
+          step: "Step 1", title: "Create Account",
+          desc: "Register with your email and choose your role as student or company.",
+        },
+        {
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          ),
+          step: "Step 2", title: "Personal Details",
+          desc: "Add your wilaya, university, and contact information.",
+        },
+        {
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          ),
+          step: "Step 3", title: "Complete Profile",
+          desc: "Add your skills, GitHub link, and start applying to internships.",
+        },
+      ].map((item, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
           <div style={{
-            width: "100%", maxWidth: 360, background: C.sapphire, borderRadius: 24,
-            padding: "44px 32px", display: "flex", flexDirection: "column",
-            alignItems: "center", gap: 20, position: "relative", overflow: "hidden"
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: step > i
+              ? "rgba(224,197,143,0.2)"
+              : "rgba(255,255,255,0.06)",
+            border: `1px solid ${step > i ? "rgba(224,197,143,0.4)" : "rgba(224,197,143,0.15)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.3s ease",
           }}>
-            <div style={{ position: "absolute", width: 220, height: 220, borderRadius: "50%",
-              background: "rgba(255,255,255,0.05)", top: -70, right: -70 }} />
-
-            <div style={{ fontSize: 72, animation: "float 3s ease-in-out infinite",
-              filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.3))" }}>🎓</div>
-
-            <div style={{ color: C.swan, fontSize: 20, fontWeight: "bold", textAlign: "center", lineHeight: 1.4 }}>
-              Your internship journey starts here
-            </div>
-            <div style={{ color: C.shell, fontSize: 13, textAlign: "center", lineHeight: 1.7, maxWidth: 250 }}>
-              Connect with top Algerian companies. Build your future from day one.
-            </div>
-
-            {/* Steps indicator */}
-            <div style={{ width: "100%", marginTop: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                {["Account", "Personal", "Profile"].map((s, i) => (
-                  <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: step > i ? C.gold : "rgba(255,255,255,0.15)",
-                      color: step > i ? C.royal : C.shell,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: "bold", transition: "all 0.3s"
-                    }}>
-                      {step > i + 1 ? "✓" : i + 1}
-                    </div>
-                    <span style={{ fontSize: 10, color: step === i + 1 ? C.gold : C.shell, transition: "color 0.3s" }}>
-                      {s}
-                    </span>
-                  </div>
-                ))}
+            {step > i + 1 ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : item.icon}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, marginBottom: 3,
+            }}>
+              <div style={{
+                fontSize: 10, color: step === i + 1 ? C.gold : "rgba(224,197,143,0.4)",
+                letterSpacing: 1, fontWeight: "bold", textTransform: "uppercase",
+                transition: "color 0.3s",
+              }}>
+                {item.step}
               </div>
-              <div style={{ height: 3, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: progressW, background: C.gold, borderRadius: 4, transition: "width 0.5s ease" }} />
-              </div>
+              {step === i + 1 && (
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: C.gold, animation: "pulse 2s ease infinite",
+                }} />
+              )}
             </div>
-
-            {/* Stats */}
-            <div style={{ display: "flex", gap: 28, marginTop: 4 }}>
-              {[["200+","Companies"],["1k+","Students"],["48","Wilayas"]].map(([n,l]) => (
-                <div key={l} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                  <span style={{ color: C.gold, fontSize: 20, fontWeight: "bold" }}>{n}</span>
-                  <span style={{ color: C.shell, fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>{l}</span>
-                </div>
-              ))}
+            <div style={{
+              color: step > i ? C.swan : "rgba(245,240,233,0.5)",
+              fontSize: 13, fontWeight: "bold", marginBottom: 3,
+              transition: "color 0.3s",
+            }}>
+              {item.title}
+            </div>
+            <div style={{ color: C.shell, fontSize: 12, lineHeight: 1.5, opacity: 0.75 }}>
+              {item.desc}
             </div>
           </div>
         </div>
+      ))}
+    </div>
 
-        {/* RIGHT PANEL */}
+    {/* Progress bar */}
+    <div style={{
+      height: 1,
+      background: `linear-gradient(90deg, transparent, rgba(224,197,143,0.2), transparent)`,
+      marginBottom: 20,
+    }} />
+
+    {/* Stats */}
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      {[["200+","Companies"],["1k+","Students"],["48","Wilayas"]].map(([n,l]) => (
+        <div key={l} style={{ textAlign: "center" }}>
+          <div style={{ color: C.gold, fontSize: 18, fontWeight: "bold" }}>{n}</div>
+          <div style={{ color: C.shell, fontSize: 10, textTransform: "uppercase", letterSpacing: 1, opacity: 0.7 }}>{l}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+        {/* ══════════ RIGHT PANEL ══════════ */}
         <div style={{
           width: 500, display: "flex", flexDirection: "column", justifyContent: "center",
           padding: "48px 52px", background: C.swan, position: "relative", zIndex: 1,
@@ -240,7 +351,7 @@ export default function Register() {
           {error   && <div style={{ background: "#fee2e2", color: "#991b1b", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {success && <div style={{ background: "#dcfce7", color: "#166534", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{success}</div>}
 
-          {/* STEP 1 */}
+          {/* ── STEP 1 ── */}
           {step === 1 && (
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
               <div style={{ marginBottom: 20 }}>
@@ -259,43 +370,75 @@ export default function Register() {
                   ))}
                 </div>
               </div>
-              <Field label="Full name *"          name="full_name"         placeholder="Ahmed Benali"    {...fieldProps} />
-              <Field label="Email address *"       name="email"             type="email" placeholder="ahmed@univ.dz" {...fieldProps} />
-              <Field label="Password *"            name="password"          type="password" placeholder="••••••••" {...fieldProps} />
-              <Field label="Confirm password *"    name="confirm_password"  type="password" placeholder="••••••••" {...fieldProps} />
+              <Field label="Full name *"         name="full_name"        placeholder="Ahmed Benali"     {...fieldProps} />
+              <Field label="Email address *"      name="email"            type="email" placeholder="ahmed@univ.dz" {...fieldProps} />
+              <Field label="Password *"           name="password"         type="password" placeholder="••••••••" {...fieldProps} />
+              <Field label="Confirm password *"   name="confirm_password" type="password" placeholder="••••••••" {...fieldProps} />
             </div>
           )}
 
-          {/* STEP 2 */}
+          {/* ── STEP 2 ── */}
           {step === 2 && (
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
-              <Field label="Phone number"  name="phone"          type="tel"  placeholder="+213 555 00 00 00" {...fieldProps} />
-              <Field label="Date of birth" name="date_of_birth"  type="date" placeholder=""                  {...fieldProps} />
+              <Field label="Phone number"  name="phone"         type="tel"  placeholder="+213 555 00 00 00" {...fieldProps} />
+              <Field label="Date of birth" name="date_of_birth" type="date" placeholder=""                  {...fieldProps} />
+
+              {/* Wilaya */}
               <Field label="Wilaya *" name="wilaya" {...fieldProps}>
                 <select
                   value={form.wilaya} onChange={e => set("wilaya", e.target.value)}
-                  style={{
-                    width: "100%", padding: "13px 16px", borderRadius: 10, cursor: "pointer",
-                    border: `1.5px solid ${focused["wilaya"] ? C.sapphire : C.shell}`,
-                    background: "#fff", color: C.royal, fontSize: 14,
-                    outline: "none", boxSizing: "border-box", fontFamily: "Georgia, serif",
-                  }}
+                  style={selectStyle("wilaya")}
                   onFocus={() => focus("wilaya")} onBlur={() => blur("wilaya")}
                 >
                   <option value="">Select your wilaya</option>
                   {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
               </Field>
+
+              {/* Company name */}
               {form.role === "company" && (
                 <Field label="Company name" name="company_name" placeholder="Tech Corp SARL" {...fieldProps} />
               )}
+
+              {/* University dropdown ← NEW */}
               {form.role === "student" && (
-                <Field label="University" name="university" placeholder="Université d'Alger 1" {...fieldProps} />
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{
+                    display: "block", color: C.sapphire, fontSize: 11, fontWeight: "bold",
+                    textTransform: "uppercase", letterSpacing: 1, marginBottom: 6
+                  }}>
+                    University *
+                  </label>
+                  <select
+                    value={form.university}
+                    onChange={e => set("university", e.target.value)}
+                    style={selectStyle("university")}
+                    onFocus={() => focus("university")}
+                    onBlur={() => blur("university")}
+                  >
+                    <option value="">Select your university</option>
+                    {universities.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} — {u.wilaya}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Message if no universities available */}
+                  {universities.length === 0 && (
+                    <div style={{
+                      fontSize: 12, color: "#e74c3c",
+                      marginTop: 6, lineHeight: 1.5,
+                    }}>
+                      ⚠️ No universities available yet. Contact us at stagioplatform@gmail.com to join.
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
 
-          {/* STEP 3 */}
+          {/* ── STEP 3 ── */}
           {step === 3 && (
             <div style={{ animation: "fadeUp 0.4s ease both" }}>
               {form.role === "student" ? (
@@ -346,7 +489,7 @@ export default function Register() {
           {/* Buttons */}
           <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             {step > 1 && (
-              <button onClick={() => setStep(s => s - 1)} style={{
+              <button onClick={() => { setError(""); setStep(s => s - 1); }} style={{
                 flex: 1, padding: "14px 0", borderRadius: 12, cursor: "pointer",
                 border: `1.5px solid ${C.shell}`, background: "transparent",
                 color: C.sapphire, fontSize: 15, fontWeight: "bold", fontFamily: "Georgia, serif",

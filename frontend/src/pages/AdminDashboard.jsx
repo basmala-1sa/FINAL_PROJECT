@@ -38,6 +38,7 @@ export default function AdminDashboard() {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
+      console.log("STATS DATA:", JSON.stringify(data))
       setStats(data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -46,16 +47,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const statCards = stats ? [
-    { label: "Total Students",   value: stats.students.total,         icon: <FiUsers size={26}/>       },
-    { label: "Total Companies",  value: stats.companies.total,        icon: <FiBriefcase size={26}/>   },
-    { label: "Active Offers",    value: stats.offers.active,          icon: <FiFileText size={26}/>    },
-    { label: "Total Applications", value: stats.applications.total,   icon: <FiClock size={26}/>       },
-    { label: "Placed Students",  value: stats.students.placed,        icon: <FiCheckCircle size={26}/> },
-    { label: "Validated Agreements", value: stats.agreements.validated, icon: <FiCheckCircle size={26}/> },
-    { label: "Pending Apps",     value: stats.applications.pending,   icon: <FiClock size={26}/>       },
-    { label: "Refused Apps",     value: stats.applications.refused,   icon: <FiBarChart2 size={26}/>   },
-  ] : [];
+  
 
   return (
     <div style={{
@@ -298,17 +290,26 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        {loading ? (
-          <div style={{ textAlign: "center", color: colors.gold, fontSize: "16px" }}>
-            Loading stats...
-          </div>
-        ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "20px", marginBottom: "40px",
-          }}>
-            {statCards.map((card, i) => (
+        {loading || !stats ? (
+  <div style={{ textAlign: "center", color: colors.gold, fontSize: "16px" }}>
+    Loading stats...
+  </div>
+) : (
+  <div style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "20px", marginBottom: "40px",
+  }}>
+    {[
+      { label: "Total Students",       value: stats.students.total,       icon: <FiUsers size={26}/> },
+{ label: "Total Applications",   value: stats.applications.total,   icon: <FiClock size={26}/> },
+{ label: "Accepted",             value: stats.applications.accepted, icon: <FiCheckCircle size={26}/> },
+{ label: "Pending",              value: stats.applications.pending, icon: <FiClock size={26}/> },
+{ label: "Refused",              value: stats.applications.refused, icon: <FiBarChart2 size={26}/> },
+{ label: "Placed Students",      value: stats.students.placed,      icon: <FiCheckCircle size={26}/> },
+{ label: "Validated Agreements", value: stats.agreements.validated, icon: <FiCheckCircle size={26}/> },
+{ label: "Unplaced Students",    value: stats.students.unplaced,    icon: <FiUsers size={26}/> },
+    ].map((card, i) => (
               <div
                 key={i}
                 className="stat-card"
@@ -393,17 +394,26 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {stats.top_wilayat.map((w, i) => (
-                  <tr key={i} style={{
-                    borderBottom: "1px solid rgba(0,0,0,0.04)",
-                    background: i % 2 === 0 ? "#fff" : "rgba(194,160,114,0.03)",
-                  }}>
-                    <td style={{ padding: "12px 16px", color: colors.gold, fontWeight: "bold" }}>{i + 1}</td>
-                    <td style={{ padding: "12px 16px", color: colors.navyDark, fontSize: "14px" }}>{w.offer__wilaya}</td>
-                    <td style={{ padding: "12px 16px", color: "#666", fontSize: "14px" }}>{w.count}</td>
-                  </tr>
-                ))}
-              </tbody>
+  {stats.top_wilayat.length === 0 ? (
+    <tr>
+      <td colSpan={3} style={{
+        padding: "24px", textAlign: "center",
+        color: "#bbb", fontSize: "13px",
+      }}>
+        No applications yet
+      </td>
+    </tr>
+  ) : stats.top_wilayat.map((w, i) => (
+    <tr key={i} style={{
+      borderBottom: "1px solid rgba(0,0,0,0.04)",
+      background: i % 2 === 0 ? "#fff" : "rgba(194,160,114,0.03)",
+    }}>
+      <td style={{ padding: "12px 16px", color: colors.gold, fontWeight: "bold" }}>{i + 1}</td>
+      <td style={{ padding: "12px 16px", color: colors.navyDark, fontSize: "14px" }}>{w.offer__wilaya}</td>
+      <td style={{ padding: "12px 16px", color: "#666", fontSize: "14px" }}>{w.count}</td>
+    </tr>
+  ))}
+</tbody>
             </table>
           </div>
         )}

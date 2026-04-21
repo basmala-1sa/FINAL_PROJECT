@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { FiBell, FiCheckCircle, FiXCircle, FiMail } from "react-icons/fi";
 
 const colors = {
   navyDark:  "#112250",
@@ -83,7 +84,7 @@ export default function NotificationBell() {
         onMouseEnter={e => e.currentTarget.style.background = "rgba(194,160,114,0.2)"}
         onMouseLeave={e => e.currentTarget.style.background = "rgba(194,160,114,0.1)"}
       >
-        🔔
+        <FiBell size={18} style={{ color: colors.gold }} />
         {/* Unread badge */}
         {unread > 0 && (
           <div style={{
@@ -142,7 +143,7 @@ export default function NotificationBell() {
                 padding: "40px 20px", textAlign: "center",
                 color: "#bbb", fontSize: "13px",
               }}>
-                <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔔</div>
+                <div style={{ color: "#ddd", marginBottom: "8px" }}><FiBell size={32} /></div>
                 No notifications yet
               </div>
             ) : (
@@ -168,18 +169,17 @@ export default function NotificationBell() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "16px",
                   }}>
-                    {n.message.includes("validated") || n.message.includes("Congratulations") ? "✅"
-                      : n.message.includes("rejected") || n.message.includes("refused") ? "❌"
-                      : "📬"}
+                    {n.message.includes("validated") || n.message.includes("Congratulations")
+  ? <FiCheckCircle size={16} style={{ color: "#27ae60" }} />
+  : n.message.includes("rejected") || n.message.includes("refused")
+  ? <FiXCircle size={16} style={{ color: "#e74c3c" }} />
+  : <FiMail size={16} style={{ color: colors.gold }} />}
                   </div>
-
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: "13px", color: colors.navyDark,
-                      lineHeight: 1.5, marginBottom: "4px",
-                    }}>
-                      {n.message}
-                    </div>
+<div style={{ flex: 1 }}>
+  <div style={{ fontSize: "13px", color: colors.navyDark, lineHeight: 1.5, marginBottom: "4px" }}>
+    {n.message.includes("/media/") ? n.message.split("Download your PDF:")[0] : n.message}
+    {n.message.includes("/media/") && <a href={"http://127.0.0.1:8000" + n.message.split("Download your PDF:")[1]?.trim()} target="_blank" rel="noreferrer" style={{ color: colors.gold, fontWeight: "bold", display: "block", marginTop: "4px" }}>✦ Download Convention de Stage PDF</a>}
+  </div>
                     <div style={{ fontSize: "11px", color: "#bbb" }}>
                       {timeAgo(n.created_at)}
                     </div>
@@ -194,7 +194,7 @@ export default function NotificationBell() {
                   )}
                 </div>
               ))
-            )}
+            )}        
           </div>
         </div>
       )}

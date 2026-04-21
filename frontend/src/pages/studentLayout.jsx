@@ -1,6 +1,7 @@
 import { useState } from "react";
-import {  FiHeart } from "react-icons/fi";
+import { FiGrid, FiUser, FiSearch, FiFileText, FiBookmark } from "react-icons/fi";
 import NotificationBell from "./NotificationBell";
+
 
 export const colors = {
   navyDark:   "#112250",
@@ -46,11 +47,11 @@ export const GLOBAL_STYLES = `
 
 // ─── Sidebar links for student ────────────────────────────────────────────────
 export const STUDENT_NAV = [
-  { key: "dashboard",    label: "Dashboard",       icon: "⊞",  path: "/student/dashboard"    },
-  { key: "profile",      label: "My Profile",      icon: "👤", path: "/student/profile"      },
-  { key: "offers",       label: "Search Offers",   icon: "🔍", path: "/student/offers"       },
-  { key: "applications", label: "My Applications", icon: "📄", path: "/student/applications" },
-  { icon: <FiHeart />, label: "Saved Offers", key: "saved" },
+  { key: "dashboard",    label: "Dashboard",       icon: <FiGrid size={16}/>,     path: "/student/dashboard"    },
+  { key: "profile",      label: "My Profile",      icon: <FiUser size={16}/>,     path: "/student/profile"      },
+  { key: "offers",       label: "Search Offers",   icon: <FiSearch size={16}/>,   path: "/student/offers"       },
+  { key: "applications", label: "My Applications", icon: <FiFileText size={16}/>, path: "/student/applications" },
+  { key: "saved",        label: "Saved Offers",    icon: <FiBookmark size={16}/> },
 ];
 
 // ─── Shared Sidebar component ─────────────────────────────────────────────────
