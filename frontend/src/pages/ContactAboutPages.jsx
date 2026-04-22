@@ -8,6 +8,29 @@ import {
   FiBook,
 } from "react-icons/fi";
 
+const RESPONSIVE_STYLES = `
+  @media (max-width: 900px) {
+    .contact-cards-grid { grid-template-columns: 1fr 1fr !important; }
+    .about-mission-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+    .about-values-grid { grid-template-columns: 1fr 1fr !important; }
+    .about-features-grid { grid-template-columns: 1fr 1fr !important; }
+    .about-stats-grid { grid-template-columns: 1fr 1fr !important; }
+    .about-stats-grid > div { border-right: none !important; border-bottom: 1px solid rgba(194,160,114,0.12); }
+    .about-team-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+  @media (max-width: 600px) {
+    .page-hero { padding: 90px 5% 50px !important; }
+    .contact-cards-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+    .contact-form-inner { padding: 24px 16px !important; }
+    .contact-form-name-email { grid-template-columns: 1fr !important; }
+    .about-values-grid { grid-template-columns: 1fr !important; }
+    .about-features-grid { grid-template-columns: 1fr !important; }
+    .about-stats-grid { grid-template-columns: 1fr 1fr !important; }
+    .about-team-grid { grid-template-columns: 1fr !important; }
+    .section-pad { padding: 60px 5% !important; }
+  }
+`;
+
 function useReveal() {
   const ref = useRef(null);
   const [v, setV] = useState(false);
@@ -43,16 +66,17 @@ export function ContactPage() {
   return (
     <div style={{ fontFamily:"Georgia,serif", background:C.cream, minHeight:"100vh", color:C.navy }}>
       <style>{SHARED_STYLES}</style>
+      <style>{RESPONSIVE_STYLES}</style>
       <Navbar active="contact"/>
 
       {/* Hero */}
-      <section style={{ background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`, padding:"120px 5% 80px", position:"relative", overflow:"hidden" }}>
+      <section className="page-hero" style={{ background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`, padding:"120px 5% 80px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(194,160,114,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(194,160,114,0.04) 1px,transparent 1px)`,backgroundSize:"60px 60px",pointerEvents:"none" }}/>
         <div style={{ position:"absolute",top:"-60px",left:"-60px",width:"380px",height:"380px",borderRadius:"50%",background:"radial-gradient(circle,rgba(194,160,114,0.1) 0%,transparent 70%)",pointerEvents:"none" }}/>
 
         <div ref={heroRef} style={{ maxWidth:"640px", margin:"0 auto", textAlign:"center", position:"relative", zIndex:1 }}>
           <div style={{ fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px",animation:heroVisible?"fadeUp .5s ease both":"none" }}>✦ GET IN TOUCH</div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(36px,5vw,60px)",fontWeight:"600",color:C.white,margin:"0 0 18px",lineHeight:1.15,animation:heroVisible?"fadeUp .6s ease .1s both":"none" }}>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(32px,5vw,60px)",fontWeight:"600",color:C.white,margin:"0 0 18px",lineHeight:1.15,animation:heroVisible?"fadeUp .6s ease .1s both":"none" }}>
             Contact <span className="gold-text">Us</span>
           </h1>
           <p style={{ fontSize:"16px",color:"rgba(217,203,194,0.65)",lineHeight:1.8,maxWidth:"440px",margin:"0 auto",animation:heroVisible?"fadeUp .6s ease .2s both":"none" }}>
@@ -62,13 +86,13 @@ export function ContactPage() {
       </section>
 
       {/* Contact cards */}
-      <section style={{ padding:"72px 5% 0" }}>
-        <div ref={cardsRef} style={{ maxWidth:"1000px",margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"18px" }}>
+      <section className="section-pad" style={{ padding:"72px 5% 0" }}>
+        <div ref={cardsRef} className="contact-cards-grid" style={{ maxWidth:"1000px",margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"18px" }}>
           {contacts.map((c,i)=>(
             <a key={i} href={c.href} target={c.href.startsWith("http")?"_blank":"_self"} rel="noreferrer" style={{
               display:"block", textDecoration:"none",
               background:C.white, borderRadius:"16px",
-              padding:"28px 20px", textAlign:"center",
+              padding:"24px 16px", textAlign:"center",
               boxShadow:"0 4px 20px rgba(17,34,80,0.06)",
               border:"1px solid rgba(17,34,80,0.06)",
               transition:"all .3s ease",
@@ -77,9 +101,9 @@ export function ContactPage() {
               onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-5px)";e.currentTarget.style.boxShadow="0 16px 40px rgba(17,34,80,0.12)";e.currentTarget.style.borderColor="rgba(194,160,114,0.3)";}}
               onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 20px rgba(17,34,80,0.06)";e.currentTarget.style.borderColor="rgba(17,34,80,0.06)";}}
             >
-              <div style={{ width:"56px",height:"56px",borderRadius:"16px",background:"rgba(17,34,80,0.04)",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,margin:"0 auto 14px" }}>{c.icon}</div>
+              <div style={{ width:"52px",height:"52px",borderRadius:"16px",background:"rgba(17,34,80,0.04)",display:"flex",alignItems:"center",justifyContent:"center",color:c.color,margin:"0 auto 14px" }}>{c.icon}</div>
               <div style={{ fontSize:"9px",color:C.muted,letterSpacing:"2px",marginBottom:"6px" }}>{c.label.toUpperCase()}</div>
-              <div style={{ fontWeight:"700",color:C.navy,fontSize:"13px",marginBottom:"4px" }}>{c.value}</div>
+              <div style={{ fontWeight:"700",color:C.navy,fontSize:"13px",marginBottom:"4px",wordBreak:"break-word" }}>{c.value}</div>
               <div style={{ fontSize:"11px",color:C.muted }}>{c.sub}</div>
             </a>
           ))}
@@ -87,9 +111,9 @@ export function ContactPage() {
       </section>
 
       {/* Contact form */}
-      <section style={{ padding:"60px 5% 96px" }}>
+      <section className="section-pad" style={{ padding:"60px 5% 96px" }}>
         <div style={{ maxWidth:"680px", margin:"0 auto" }}>
-          <div style={{ background:C.white,borderRadius:"24px",padding:"44px",boxShadow:"0 8px 40px rgba(17,34,80,0.08)",border:"1px solid rgba(17,34,80,0.07)",position:"relative",overflow:"hidden" }}>
+          <div className="contact-form-inner" style={{ background:C.white,borderRadius:"24px",padding:"44px",boxShadow:"0 8px 40px rgba(17,34,80,0.08)",border:"1px solid rgba(17,34,80,0.07)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",top:0,left:0,right:0,height:"3px",background:`linear-gradient(90deg,${C.gold},${C.lightGold})`,borderRadius:"24px 24px 0 0" }}/>
 
             <div style={{ marginBottom:"28px" }}>
@@ -104,13 +128,13 @@ export function ContactPage() {
             )}
 
             {/* Fields */}
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px",marginBottom:"16px" }}>
+            <div className="contact-form-name-email" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px",marginBottom:"16px" }}>
               {[{key:"name",label:"YOUR NAME",icon:<FiUser size={14}/>,placeholder:"Ahmed Benali",type:"text"},{key:"email",label:"EMAIL ADDRESS",icon:<FiMail size={14}/>,placeholder:"ahmed@univ.dz",type:"email"}].map(f=>(
                 <div key={f.key}>
                   <label style={{ display:"block",fontSize:"9px",color:C.muted,letterSpacing:"1.5px",marginBottom:"8px",fontWeight:"700" }}>{f.label}</label>
                   <div style={{ position:"relative" }}>
                     <span style={{ position:"absolute",left:"13px",top:"50%",transform:"translateY(-50%)",color:C.gold }}>{f.icon}</span>
-                    <input type={f.type} value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})} placeholder={f.placeholder} style={{ width:"100%",padding:"12px 12px 12px 38px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",transition:"border-color .2s" }}
+                    <input type={f.type} value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})} placeholder={f.placeholder} style={{ width:"100%",padding:"12px 12px 12px 38px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",transition:"border-color .2s",boxSizing:"border-box" }}
                       onFocus={e=>e.target.style.borderColor=C.gold}
                       onBlur={e=>e.target.style.borderColor="rgba(17,34,80,0.1)"}
                     />
@@ -121,7 +145,7 @@ export function ContactPage() {
 
             <div style={{ marginBottom:"16px" }}>
               <label style={{ display:"block",fontSize:"9px",color:C.muted,letterSpacing:"1.5px",marginBottom:"8px",fontWeight:"700" }}>SUBJECT</label>
-              <input type="text" value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} placeholder="What is this about?" style={{ width:"100%",padding:"12px 14px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",transition:"border-color .2s" }}
+              <input type="text" value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} placeholder="What is this about?" style={{ width:"100%",padding:"12px 14px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",transition:"border-color .2s",boxSizing:"border-box" }}
                 onFocus={e=>e.target.style.borderColor=C.gold}
                 onBlur={e=>e.target.style.borderColor="rgba(17,34,80,0.1)"}
               />
@@ -131,7 +155,7 @@ export function ContactPage() {
               <label style={{ display:"block",fontSize:"9px",color:C.muted,letterSpacing:"1.5px",marginBottom:"8px",fontWeight:"700" }}>MESSAGE</label>
               <div style={{ position:"relative" }}>
                 <span style={{ position:"absolute",left:"13px",top:"14px",color:C.gold }}><FiMessageSquare size={14}/></span>
-                <textarea value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Tell us how we can help..." rows={5} style={{ width:"100%",padding:"12px 12px 12px 38px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",resize:"vertical",transition:"border-color .2s" }}
+                <textarea value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Tell us how we can help..." rows={5} style={{ width:"100%",padding:"12px 12px 12px 38px",borderRadius:"9px",border:"1.5px solid rgba(17,34,80,0.1)",background:C.offWhite,fontSize:"13px",fontFamily:"Georgia,serif",color:C.navy,outline:"none",resize:"vertical",transition:"border-color .2s",boxSizing:"border-box" }}
                   onFocus={e=>e.target.style.borderColor=C.gold}
                   onBlur={e=>e.target.style.borderColor="rgba(17,34,80,0.1)"}
                 />
@@ -184,16 +208,17 @@ export function AboutPage() {
   return (
     <div style={{ fontFamily:"Georgia,serif", background:C.cream, minHeight:"100vh", color:C.navy }}>
       <style>{SHARED_STYLES}</style>
+      <style>{RESPONSIVE_STYLES}</style>
       <Navbar active="about"/>
 
       {/* Hero */}
-      <section style={{ background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`, padding:"120px 5% 80px", position:"relative", overflow:"hidden" }}>
+      <section className="page-hero" style={{ background:`linear-gradient(135deg,${C.navy} 0%,${C.navyMid} 100%)`, padding:"120px 5% 80px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(194,160,114,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(194,160,114,0.04) 1px,transparent 1px)`,backgroundSize:"60px 60px",pointerEvents:"none" }}/>
         <div style={{ position:"absolute",bottom:"-60px",right:"-60px",width:"380px",height:"380px",borderRadius:"50%",background:"radial-gradient(circle,rgba(194,160,114,0.1) 0%,transparent 70%)",pointerEvents:"none" }}/>
 
         <div ref={heroRef} style={{ maxWidth:"700px",margin:"0 auto",textAlign:"center",position:"relative",zIndex:1 }}>
           <div style={{ fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"14px",animation:heroVisible?"fadeUp .5s ease both":"none" }}>✦ OUR STORY</div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(36px,5vw,60px)",fontWeight:"600",color:C.white,margin:"0 0 18px",lineHeight:1.15,animation:heroVisible?"fadeUp .6s ease .1s both":"none" }}>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(32px,5vw,60px)",fontWeight:"600",color:C.white,margin:"0 0 18px",lineHeight:1.15,animation:heroVisible?"fadeUp .6s ease .1s both":"none" }}>
             About <span className="gold-text">Stag.io</span>
           </h1>
           <p style={{ fontSize:"16px",color:"rgba(217,203,194,0.65)",lineHeight:1.8,maxWidth:"520px",margin:"0 auto",animation:heroVisible?"fadeUp .6s ease .2s both":"none" }}>
@@ -203,11 +228,11 @@ export function AboutPage() {
       </section>
 
       {/* Mission + Story */}
-      <section style={{ padding:"96px 5%", background:C.offWhite }}>
-        <div ref={missionRef} style={{ maxWidth:"1100px",margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"64px",alignItems:"center" }}>
+      <section className="section-pad" style={{ padding:"96px 5%", background:C.offWhite }}>
+        <div ref={missionRef} className="about-mission-grid" style={{ maxWidth:"1100px",margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"64px",alignItems:"center" }}>
           <div style={{ animation:mV?"fadeUp .6s ease both":"none" }}>
             <div style={{ fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"12px" }}>✦ OUR STORY</div>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(28px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 20px",lineHeight:1.2 }}>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(26px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 20px",lineHeight:1.2 }}>
               Built for Algeria's<br/>Future Workforce
             </h2>
             <div style={{ width:"60px",height:"2px",background:`linear-gradient(90deg,${C.gold},${C.lightGold},transparent)`,marginBottom:"24px",borderRadius:"2px" }}/>
@@ -222,7 +247,7 @@ export function AboutPage() {
             </p>
           </div>
 
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",animation:mV?"slideR .7s ease .2s both":"none" }}>
+          <div className="about-values-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",animation:mV?"slideR .7s ease .2s both":"none" }}>
             {values.map((v,i)=>(
               <div key={i} style={{ background:v.dark?C.navy:C.white,borderRadius:"16px",padding:"24px 20px",boxShadow:v.dark?"0 12px 36px rgba(17,34,80,0.18)":"0 4px 20px rgba(17,34,80,0.06)",border:v.dark?"none":"1px solid rgba(17,34,80,0.06)",transition:"all .3s ease" }}
                 onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";}}
@@ -238,14 +263,14 @@ export function AboutPage() {
       </section>
 
       {/* Features */}
-      <section style={{ padding:"96px 5%", background:C.cream }}>
+      <section className="section-pad" style={{ padding:"96px 5%", background:C.cream }}>
         <div style={{ maxWidth:"1100px",margin:"0 auto" }}>
           <div style={{ textAlign:"center",marginBottom:"60px" }}>
             <div style={{ fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"10px" }}>✦ WHAT WE OFFER</div>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(28px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 14px" }}>Platform Highlights</h2>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(26px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 14px" }}>Platform Highlights</h2>
             <div style={{ width:"48px",height:"2px",background:`linear-gradient(90deg,transparent,${C.gold},transparent)`,margin:"0 auto" }}/>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"18px" }}>
+          <div className="about-features-grid" style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"18px" }}>
             {features.map((f,i)=>(
               <div key={i} style={{ background:C.white,borderRadius:"16px",padding:"28px 22px",boxShadow:"0 4px 20px rgba(17,34,80,0.06)",border:"1px solid rgba(17,34,80,0.06)",transition:"all .3s ease",animation:`fadeUp .5s ease ${i*.08}s both` }}
                 onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.borderColor="rgba(194,160,114,0.3)";}}
@@ -261,12 +286,12 @@ export function AboutPage() {
       </section>
 
       {/* Stats */}
-      <section ref={statsRef} style={{ padding:"72px 5%",background:C.navy }}>
-        <div style={{ maxWidth:"900px",margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(4,1fr)" }}>
+      <section ref={statsRef} className="section-pad" style={{ padding:"72px 5%",background:C.navy }}>
+        <div className="about-stats-grid" style={{ maxWidth:"900px",margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(4,1fr)" }}>
           {[{icon:<FiBriefcase size={18}/>,val:"500+",label:"Active Offers"},{icon:<FiUsers size={18}/>,val:"200+",label:"Companies"},{icon:<FiAward size={18}/>,val:"1000+",label:"Students Placed"},{icon:<FiGlobe size={18}/>,val:"48",label:"Wilayas"}].map((s,i)=>(
             <div key={i} style={{ textAlign:"center",padding:"12px 16px",borderRight:i<3?"1px solid rgba(194,160,114,0.12)":"none",animation:statsV?`fadeUp .5s ease ${i*.1}s both`:"none" }}>
               <div style={{ color:C.gold,marginBottom:"8px",display:"flex",justifyContent:"center" }}>{s.icon}</div>
-              <div style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"38px",fontWeight:"600",color:C.gold,lineHeight:1,marginBottom:"4px" }}>{s.val}</div>
+              <div style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"36px",fontWeight:"600",color:C.gold,lineHeight:1,marginBottom:"4px" }}>{s.val}</div>
               <div style={{ fontSize:"10px",color:"rgba(245,240,233,0.4)",letterSpacing:"1.5px" }}>{s.label.toUpperCase()}</div>
             </div>
           ))}
@@ -274,13 +299,13 @@ export function AboutPage() {
       </section>
 
       {/* Team */}
-      <section style={{ padding:"96px 5%", background:C.offWhite }}>
+      <section className="section-pad" style={{ padding:"96px 5%", background:C.offWhite }}>
         <div ref={teamRef} style={{ maxWidth:"700px",margin:"0 auto",textAlign:"center" }}>
           <div style={{ fontSize:"10px",color:C.gold,letterSpacing:"3px",marginBottom:"10px" }}>✦ THE TEAM</div>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(28px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 14px" }}>Meet the Builders</h2>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"clamp(26px,4vw,44px)",fontWeight:"600",color:C.navy,margin:"0 0 14px" }}>Meet the Builders</h2>
           <div style={{ width:"48px",height:"2px",background:`linear-gradient(90deg,transparent,${C.gold},transparent)`,margin:"0 auto 48px" }}/>
 
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"24px" }}>
+          <div className="about-team-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"24px" }}>
             {team.map((t,i)=>(
               <div key={i} style={{ background:C.white,borderRadius:"20px",padding:"36px 28px",boxShadow:"0 4px 20px rgba(17,34,80,0.07)",border:"1px solid rgba(17,34,80,0.07)",animation:teamV?`fadeUp .6s ease ${i*.15}s both`:"none" }}>
                 <div style={{ width:"72px",height:"72px",borderRadius:"50%",background:`linear-gradient(135deg,${C.gold},${C.lightGold})`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:"28px",fontWeight:"700",color:C.navy,margin:"0 auto 16px",boxShadow:"0 8px 24px rgba(194,160,114,0.3)" }}>

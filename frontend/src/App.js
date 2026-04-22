@@ -16,6 +16,9 @@ import StudentLayout from './pages/StudentLayout'
 import SavedOffers from './pages/SavedOffers'
 import LandingPage from './pages/LandingPage'
 import SuperAdminDashboard from "./pages/SuperAdminDashboard"
+import CompaniesPage from './pages/CompaniesPage'
+import { ContactPage, AboutPage } from './pages/ContactAboutPages'
+import CompanyDetail from "./pages/CompanyDetail"
 
 function App() {
   return (
@@ -23,8 +26,12 @@ function App() {
       <Routes>
 
         {/* Landing page = home */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/landing" element={<LandingPage />} />
+        
+        
+<Route path="/"          element={<LandingPage />} />
+<Route path="/companies" element={<CompaniesPage />} />
+<Route path="/contact"   element={<ContactPage />} />
+<Route path="/about"     element={<AboutPage />} />
 
         {/* Auth */}
         <Route path="/login"    element={<Login />} />
@@ -49,6 +56,10 @@ function App() {
         <Route path="/student/layout"       element={<StudentLayout />} />
         <Route path="/student/saved"        element={<SavedOffers />} />
         <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+
+
+        <Route path="/company/:id" element={<CompanyDetail />} />
+
 
         
 
