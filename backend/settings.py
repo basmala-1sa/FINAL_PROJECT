@@ -139,3 +139,10 @@ CORS_ALLOW_CREDENTIALS = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME':  timedelta(days=7),   # ← 7 days instead of 5 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+}

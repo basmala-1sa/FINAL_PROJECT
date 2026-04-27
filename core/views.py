@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile, SavedOffer, Review
+from .models import User, CompanyProfile, Offer, Application, Notification, StudentProfile, SavedOffer, Review, University, WebsiteReview, PublicReview, ContactMessage
 
 
 
@@ -73,15 +73,24 @@ def login(request):
 #           COMPANY PROFILE VIEW
 # ============================================
 @api_view(['GET', 'PUT'])
+@permission_classes([AllowAny])
 def company_profile(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
     try:
-        profile = CompanyProfile.objects.get(user_id=request.data.get('user_id'))
+        decoded = AccessToken(token)
+        user = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    try:
+        profile = CompanyProfile.objects.get(user=user)
     except CompanyProfile.DoesNotExist:
         profile = None
 
     if request.method == 'GET':
         if profile is None:
-            return Response({'message': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Profile not found'}, status=404)
         serializer = CompanyProfileSerializer(profile)
         return Response(serializer.data)
 
@@ -91,9 +100,9 @@ def company_profile(request):
         else:
             serializer = CompanyProfileSerializer(profile, data=request.data)
         if serializer.is_valid():
-            serializer.save(user_id=request.data.get('user_id'))
+            serializer.save(user=user)
             return Response({'message': 'Profile saved successfully!'})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
 
 # ============================================
@@ -284,15 +293,26 @@ from .models import Offer, StudentProfile
 from .serializers import OfferSerializer
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def offer_list(request):
+    # ← decode token manually like apply_to_offer
+    auth_header = request.headers.get('Authorization', '')
+    student = None
+    if auth_header.startswith('Bearer '):
+        try:
+            token   = auth_header.split(' ')[1]
+            decoded = AccessToken(token)
+            user    = User.objects.get(id=decoded['user_id'])
+            student = StudentProfile.objects.get(user=user)
+        except Exception:
+            student = None
+
     offers = Offer.objects.filter(is_active=True)
 
-    # filters
     wilaya = request.GET.get('wilaya')
     skills = request.GET.get('skills')
     type_  = request.GET.get('type')
-    search = request.GET.get('search')  # ← added!
+    search = request.GET.get('search')
 
     if wilaya:
         offers = offers.filter(wilaya__icontains=wilaya)
@@ -301,33 +321,32 @@ def offer_list(request):
     if type_:
         offers = offers.filter(type__icontains=type_)
     if search:
-        offers = offers.filter(title__icontains=search)  # ← added!
+        offers = offers.filter(title__icontains=search)
 
-    # smart recommendations ← added!
-    try:
-        student        = StudentProfile.objects.get(user=request.user)
-        student_skills = [s.strip() for s in student.skills.split(',')]
-
-        recommended = []
-        others      = []
-
+    # smart recommendations — case-insensitive, score-ranked
+    if student and student.skills:
+        student_skills = [s.strip().lower() for s in student.skills.split(',') if s.strip()]
+        scored = []
+        others = []
         for offer in offers:
-            offer_skills = [s.strip() for s in offer.skills.split(',')]
-            match = any(skill in offer_skills for skill in student_skills)
-            if match:
-                recommended.append(offer)
+            offer_skills = [s.strip().lower() for s in (offer.skills or '').split(',') if s.strip()]
+            score = sum(
+                1 for ss in student_skills
+                if any(ss in os or os in ss for os in offer_skills)
+            )
+            if score > 0:
+                scored.append((score, offer))
             else:
                 others.append(offer)
-
+        scored.sort(key=lambda x: x[0], reverse=True)
+        recommended = [offer for _, offer in scored]
         return Response({
             'recommended': OfferSerializer(recommended, many=True).data,
             'others':      OfferSerializer(others, many=True).data
         })
 
-    except StudentProfile.DoesNotExist:
-        # if no student profile → just return all offers
-        serializer = OfferSerializer(offers, many=True)
-        return Response({'offers': serializer.data})
+    serializer = OfferSerializer(offers, many=True)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])
@@ -347,17 +366,12 @@ def offer_detail(request, pk):
 #   HELPER: CHECK IF STUDENT FILE IS COMPLETE
 # ============================================
 def is_student_file_complete(student_profile):
-    """
-    Returns (is_complete: bool, missing_fields: list)
-    A file is complete if the student has filled:
-    skills, wilaya, university (github_link is optional)
-    """
     missing = []
     if not student_profile.skills or not student_profile.skills.strip():
         missing.append('skills')
     if not student_profile.wilaya or not student_profile.wilaya.strip():
         missing.append('wilaya')
-    if not student_profile.university or not student_profile.university.strip():
+    if not student_profile.university:  # ← FIXED: no .strip() on ForeignKey
         missing.append('university')
     return (len(missing) == 0, missing)
 
@@ -492,37 +506,50 @@ def generate_convention_pdf(agreement):
 #   ADMIN: LIST PENDING INTERNSHIPS
 # ============================================
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def admin_pending_internships(request):
-    """
-    Returns all applications that were accepted by a company
-    but not yet validated by admin (no Agreement yet, or Agreement is pending).
-    """
-    # Accepted applications that have no agreement yet
+    # ← get the admin from token
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded    = AccessToken(token)
+        admin_user = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
     accepted_apps = Application.objects.filter(status='accepted')
-    existing_agreement_app_ids = Agreement.objects.values_list('application_id', flat=True)
-    pending_apps = accepted_apps.exclude(id__in=existing_agreement_app_ids)
+    existing_ids  = Agreement.objects.values_list('application_id', flat=True)
+    pending_apps  = accepted_apps.exclude(id__in=existing_ids)
+
+    # ← filter by university
+    if admin_user.university:
+        pending_apps = pending_apps.filter(
+            student__university=admin_user.university
+        )
+    else:
+        # admin with no university linked → sees nothing
+        pending_apps = pending_apps.none()
 
     data = []
     for app in pending_apps:
-        student  = app.student
+        student = app.student
         is_complete, missing = is_student_file_complete(student)
         data.append({
-            'application_id':  app.id,
-            'student_name':    student.user.full_name,
-            'student_email':   student.user.email,
-            'student_skills':  student.skills,
-            'student_wilaya':  student.wilaya,
-            'student_university': student.university,
-            'student_github':  student.github_link,
-            'offer_title':     app.offer.title,
-            'company_name':    app.offer.company.company_name,
-            'applied_at':      app.applied_at,
-            'file_complete':   is_complete,
-            'missing_fields':  missing,
+            'application_id':     app.id,
+            'student_name':       student.user.full_name,
+            'student_email':      student.user.email,
+            'student_skills':     student.skills,
+            'student_wilaya':     student.wilaya,
+            'student_university': student.university.name if student.university else '—',
+            'student_github':     student.github_link,
+            'offer_title':        app.offer.title,
+            'company_name':       app.offer.company.company_name,
+            'applied_at':         app.applied_at,
+            'file_complete':      is_complete,
+            'missing_fields':     missing,
         })
 
     return Response(data, status=status.HTTP_200_OK)
-
 
 # ============================================
 #   ADMIN: VALIDATE INTERNSHIP → GENERATE PDF
@@ -561,12 +588,14 @@ def admin_validate_internship(request):
             'missing_fields': missing
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # --- create Agreement ---
+    # --- create Agreement + mark application as validated ---
     agreement = Agreement.objects.create(
         application=application,
         validated_by=admin_user,
         status='validated'
     )
+    application.status = 'validated'
+    application.save()
 
     # --- generate PDF ---
     pdf_bytes = generate_convention_pdf(agreement)
@@ -575,13 +604,20 @@ def admin_validate_internship(request):
 
     # --- notify student ---
     Notification.objects.create(
-        recipient=application.student.user,
-        message=(
-            f"Your internship convention for '{application.offer.title}' at "
-            f"{application.offer.company.company_name} has been validated! "
-            f"Your PDF agreement is now available."
-        )
+    recipient=application.student.user,
+    message=(
+        f"Your internship convention for '{application.offer.title}' at "
+        f"{application.offer.company.company_name} has been validated! "
+        f"Download your PDF: /media/{agreement.pdf_file.name}"
     )
+)
+    Notification.objects.create(
+    recipient=application.offer.company.user,
+    message=(
+        f"The internship convention for {application.student.user.full_name} "
+        f"applying to '{application.offer.title}' has been validated by the administration! ✅"
+    )
+)
 
     return Response({
         'message': 'Internship validated and PDF generated successfully!',
@@ -650,32 +686,54 @@ def admin_reject_internship(request):
 #   ADMIN: STATISTICS
 # ============================================
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def admin_statistics(request):
     from django.db.models import Count
 
-    total_students  = User.objects.filter(role='student').count()
+    # get admin from token
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded    = AccessToken(token)
+        admin_user = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    # filter students by admin's university
+    if admin_user.university:
+        students = StudentProfile.objects.filter(university=admin_user.university)
+        student_users = students.values_list('user_id', flat=True)
+        applications = Application.objects.filter(student__in=students)
+    else:
+        students     = StudentProfile.objects.none()
+        student_users = []
+        applications  = Application.objects.none()
+
+    total_students = students.count()
     total_companies = User.objects.filter(role='company').count()
     total_offers    = Offer.objects.count()
     active_offers   = Offer.objects.filter(is_active=True).count()
 
-    total_applications = Application.objects.count()
-    pending_apps    = Application.objects.filter(status='pending').count()
-    accepted_apps   = Application.objects.filter(status='accepted').count()
-    refused_apps    = Application.objects.filter(status='refused').count()
+    total_applications = applications.count()
+    pending_apps       = applications.filter(status='pending').count()
+    accepted_apps      = applications.filter(status='accepted').count()
+    refused_apps       = applications.filter(status='refused').count()
 
-    validated_agreements = Agreement.objects.filter(status='validated').count()
-    rejected_agreements  = Agreement.objects.filter(status='rejected').count()
+    validated_agreements = Agreement.objects.filter(
+        application__in=applications, status='validated'
+    ).count()
+    rejected_agreements = Agreement.objects.filter(
+        application__in=applications, status='rejected'
+    ).count()
 
-    # Students who got a validated agreement = placed
-    placed_student_ids = Agreement.objects.filter(status='validated').values_list(
-        'application__student__user_id', flat=True
-    )
+    placed_student_ids = Agreement.objects.filter(
+        application__in=applications, status='validated'
+    ).values_list('application__student__user_id', flat=True)
     placed_count   = len(set(placed_student_ids))
     unplaced_count = total_students - placed_count
 
-    # Top wilayat with most applications
     top_wilayat = (
-        Application.objects
+        applications
         .values('offer__wilaya')
         .annotate(count=Count('id'))
         .order_by('-count')[:5]
@@ -705,8 +763,7 @@ def admin_statistics(request):
             'rejected':  rejected_agreements,
         },
         'top_wilayat': list(top_wilayat),
-    }, status=status.HTTP_200_OK)  
-
+    }, status=status.HTTP_200_OK)
 # ============================================
 #           APPLY TO OFFER
 # ============================================
@@ -788,47 +845,51 @@ def my_applications(request):
 #           SAVE / UNSAVE OFFER
 # ============================================
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def save_offer(request):
-    student_id = request.data.get('student_id')
-    offer_id   = request.data.get('offer_id')
-
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
     try:
-        student = StudentProfile.objects.get(user_id=student_id)
-        offer   = Offer.objects.get(id=offer_id)
-    except:
-        return Response({'error': 'Student or offer not found!'}, 
-                        status=status.HTTP_404_NOT_FOUND)
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token or student not found'}, status=401)
 
-    # check if already saved
+    offer_id = request.data.get('offer_id')
+    try:
+        offer = Offer.objects.get(id=offer_id)
+    except Offer.DoesNotExist:
+        return Response({'error': 'Offer not found'}, status=404)
+
     existing = SavedOffer.objects.filter(student=student, offer=offer).first()
-
     if existing:
-        # already saved → unsave it (toggle)
         existing.delete()
         return Response({'message': 'Offer removed from favorites!'})
     else:
-        # not saved → save it
         SavedOffer.objects.create(student=student, offer=offer)
-        return Response({'message': 'Offer saved to favorites! ❤️'})
+        return Response({'message': 'Offer saved to favorites!'})
 
 
 # ============================================
 #           GET SAVED OFFERS
 # ============================================
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_saved_offers(request):
-    student_id = request.data.get('student_id')
-
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
     try:
-        student = StudentProfile.objects.get(user_id=student_id)
-    except StudentProfile.DoesNotExist:
-        return Response({'error': 'Student not found!'}, 
-                        status=status.HTTP_404_NOT_FOUND)
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
 
+    from .serializers import SavedOfferSerializer
     saved = SavedOffer.objects.filter(student=student)
     serializer = SavedOfferSerializer(saved, many=True)
     return Response(serializer.data)
-
 
 # ============================================
 #           LEAVE A REVIEW
@@ -910,3 +971,645 @@ class OfferDetailPublicView(APIView):
             return Response(serializer.data)
         except Offer.DoesNotExist:
             return Response({'error': 'Offer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+# ============================================
+#           GET NOTIFICATIONS
+# ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_notifications(request):
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return Response({'error': 'Token required'}, status=401)
+    token = auth_header.split(' ')[1]
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    notifications = Notification.objects.filter(
+        recipient=user
+    ).order_by('-created_at')[:20]
+
+    data = [{
+        'id':         n.id,
+        'message':    n.message,
+        'is_read':    n.is_read,
+        'created_at': n.created_at,
+    } for n in notifications]
+
+    return Response(data)
+
+
+# ============================================
+#           MARK NOTIFICATIONS AS READ
+# ============================================
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mark_notifications_read(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    Notification.objects.filter(recipient=user, is_read=False).update(is_read=True)
+    return Response({'message': 'All marked as read'})
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_my_agreement(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    # find validated agreement for this student
+    agreement = Agreement.objects.filter(
+        application__student=student,
+        status='validated'
+    ).first()
+
+    if not agreement:
+        return Response({'error': 'No validated agreement found'}, status=404)
+
+    return Response({
+    'agreement_id': agreement.id,
+    'offer_title':  agreement.application.offer.title,
+    'company_name': agreement.application.offer.company.company_name,
+    'company_id':   agreement.application.offer.company.id,
+    'validated_at': agreement.validated_at,
+    'pdf_url':      f'http://127.0.0.1:8000/media/{agreement.pdf_file.name}',
+    'status':       agreement.status,
+})
+
+
+
+# ============================================
+#   GET ALL UNIVERSITIES (public - for register dropdown)
+# ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_universities(request):
+    universities = University.objects.filter(is_active=True)
+    data = [{
+        'id':     u.id,
+        'name':   u.name,
+        'wilaya': u.wilaya,
+    } for u in universities]
+    return Response(data)
+
+
+# ============================================
+#   SUPERADMIN: ADD UNIVERSITY
+# ============================================
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def superadmin_add_university(request):
+    # verify superadmin
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    name   = request.data.get('name')
+    wilaya = request.data.get('wilaya')
+    email  = request.data.get('email', '')
+
+    if not name or not wilaya:
+        return Response({'error': 'Name and wilaya are required'}, status=400)
+
+    if University.objects.filter(name=name).exists():
+        return Response({'error': 'University already exists'}, status=400)
+
+    university = University.objects.create(
+        name=name, wilaya=wilaya, email=email
+    )
+    return Response({
+        'message': f'University {name} added successfully!',
+        'id':      university.id,
+        'name':    university.name,
+        'wilaya':  university.wilaya,
+    }, status=201)
+
+
+# ============================================
+#   SUPERADMIN: CREATE ADMIN FOR UNIVERSITY
+# ============================================
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def superadmin_create_admin(request):
+    # verify superadmin
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    from django.contrib.auth.hashers import make_password
+
+    full_name     = request.data.get('full_name')
+    email         = request.data.get('email')
+    password      = request.data.get('password')
+    university_id = request.data.get('university_id')
+
+    if not all([full_name, email, password, university_id]):
+        return Response({'error': 'All fields are required'}, status=400)
+
+    if User.objects.filter(email=email).exists():
+        return Response({'error': 'Email already exists'}, status=400)
+
+    try:
+        university = University.objects.get(id=university_id)
+    except University.DoesNotExist:
+        return Response({'error': 'University not found'}, status=404)
+
+    admin = User.objects.create(
+        full_name  = full_name,
+        email      = email,
+        password   = make_password(password),
+        role       = 'admin',
+        university = university
+    )
+    return Response({
+        'message':    f'Admin created for {university.name}!',
+        'admin_id':   admin.id,
+        'full_name':  admin.full_name,
+        'email':      admin.email,
+        'university': university.name,
+    }, status=201)
+
+
+# ============================================
+#   SUPERADMIN: LIST ALL UNIVERSITIES + STATS
+# ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def superadmin_universities(request):
+    # verify superadmin
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    universities = University.objects.all()
+    data = []
+    for u in universities:
+        data.append({
+            'id':        u.id,
+            'name':      u.name,
+            'wilaya':    u.wilaya,
+            'email':     u.email,
+            'is_active': u.is_active,
+            'admins':    User.objects.filter(university=u, role='admin').count(),
+            'students':  StudentProfile.objects.filter(university=u).count(),
+            'added_at':  u.added_at,
+        })
+    return Response(data)
+
+
+# ============================================
+#   SUPERADMIN: TOGGLE UNIVERSITY ACTIVE
+# ============================================
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def superadmin_toggle_university(request, university_id):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    try:
+        university = University.objects.get(id=university_id)
+    except University.DoesNotExist:
+        return Response({'error': 'University not found'}, status=404)
+
+    university.is_active = not university.is_active
+    university.save()
+    return Response({
+        'message':   f'University {"activated" if university.is_active else "deactivated"}!',
+        'is_active': university.is_active
+    })
+
+
+# ============================================
+#   SUPERADMIN: LIST ALL ADMINS
+# ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def superadmin_admins(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    admins = User.objects.filter(role='admin').select_related('university')
+    data = [{
+        'id':         a.id,
+        'full_name':  a.full_name,
+        'email':      a.email,
+        'university': a.university.name if a.university else '—',
+        'university_id': a.university.id if a.university else None,
+    } for a in admins]
+    return Response(data)
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_companies(request):
+    companies = CompanyProfile.objects.all()
+    data = []
+    for c in companies:
+        student_reviews = Review.objects.filter(company=c)
+        public_revs     = PublicReview.objects.filter(company=c)
+        all_ratings = [r.rating for r in student_reviews] + [r.rating for r in public_revs]
+        avg = round(sum(all_ratings) / len(all_ratings), 1) if all_ratings else 0
+        data.append({
+            'id':            c.id,
+            'company_name':  c.company_name,
+            'description':   c.description,
+            'location':      c.location,
+            'website':       c.website,
+            'initial':       c.company_name[0].upper() if c.company_name else 'C',
+            'avg_rating':    avg,
+            'total_reviews': len(all_ratings),
+        })
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_reviews(request):
+    reviews = Review.objects.all().order_by('-created_at')[:6]
+    serializer = ReviewSerializer(reviews, many=True)
+    return Response(serializer.data)
+
+
+# ============================================
+#   PUBLIC: ALL COMPANIES + THEIR REVIEWS
+# ============================================
+
+
+# ============================================
+#   PUBLIC: REVIEWS FOR ONE COMPANY
+# ============================================
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def company_public_reviews(request, company_id):
+    try:
+        company = CompanyProfile.objects.get(id=company_id)
+    except CompanyProfile.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+
+    if request.method == 'GET':
+        # Verified student reviews (from completed & validated internships)
+        verified = [{
+            'student_name': r.student.user.full_name,
+            'rating':       r.rating,
+            'comment':      r.comment,
+            'verified':     True,
+        } for r in Review.objects.filter(company=company).order_by('-created_at')]
+
+        # Anonymous public reviews
+        public = [{
+            'student_name': r.name,
+            'rating':       r.rating,
+            'comment':      r.comment,
+            'verified':     False,
+        } for r in PublicReview.objects.filter(company=company).order_by('-created_at')]
+
+        return Response(verified + public)
+
+    if request.method == 'POST':
+        name    = request.data.get('name', 'Anonymous')
+        rating  = int(request.data.get('rating', 5))
+        comment = request.data.get('comment', '')
+        if not comment.strip():
+            return Response({'error': 'Comment is required'}, status=400)
+        PublicReview.objects.create(company=company, name=name, rating=rating, comment=comment)
+        return Response({'message': 'Review submitted!'}, status=201)
+
+
+
+# ============================================
+#   WEBSITE REVIEWS — leave + get
+# ============================================
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def leave_website_review(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    rating  = request.data.get('rating')
+    comment = request.data.get('comment')
+
+    if not rating or not comment:
+        return Response({'error': 'Rating and comment are required'}, status=400)
+
+    WebsiteReview.objects.create(user=user, rating=rating, comment=comment)
+    return Response({'message': 'Thank you for your review! ⭐'})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_website_reviews(request):
+    from .serializers import WebsiteReviewSerializer
+    reviews    = WebsiteReview.objects.all().order_by('-created_at')
+    avg_rating = round(sum(r.rating for r in reviews) / reviews.count(), 1) if reviews.exists() else 0
+    serializer = WebsiteReviewSerializer(reviews, many=True)
+    return Response({
+        'average_rating': avg_rating,
+        'total_reviews':  reviews.count(),
+        'reviews':        serializer.data,
+    })
+
+
+# ============================================
+#   COMPANY PUBLIC PROFILE + OFFERS + REVIEWS
+# ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def company_public_profile(request, company_id):
+    try:
+        company = CompanyProfile.objects.get(id=company_id)
+    except CompanyProfile.DoesNotExist:
+        return Response({'error': 'Company not found'}, status=404)
+
+    # reviews
+    reviews = Review.objects.filter(company=company).order_by('-created_at')
+    avg_rating = round(sum(r.rating for r in reviews) / reviews.count(), 1) if reviews.exists() else 0
+
+    # active offers
+    offers = Offer.objects.filter(company=company, is_active=True)
+    offers_data = OfferSerializer(offers, many=True).data
+
+    reviews_data = [{
+        'id':           r.id,
+        'student_name': r.student.user.full_name,
+        'rating':       r.rating,
+        'comment':      r.comment,
+        'created_at':   r.created_at,
+    } for r in reviews]
+
+    return Response({
+        'id':            company.id,
+        'company_name':  company.company_name,
+        'description':   company.description,
+        'location':      company.location,
+        'website':       company.website,
+        'avg_rating':    avg_rating,
+        'total_reviews': reviews.count(),
+        'reviews':       reviews_data,
+        'offers':        offers_data,
+        'total_offers':  offers.count(),
+    })
+
+
+
+# public_reviews defined above (line ~1257)
+
+
+
+
+
+# ── STUDENT LEAVE REVIEW (token-based) ──
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def leave_review_token(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token or not a student'}, status=401)
+
+    company_id = request.data.get('company_id')
+    rating     = request.data.get('rating')
+    comment    = request.data.get('comment', '')
+
+    if not company_id or not rating:
+        return Response({'error': 'company_id and rating are required'}, status=400)
+
+    try:
+        company = CompanyProfile.objects.get(id=company_id)
+    except CompanyProfile.DoesNotExist:
+        return Response({'error': 'Company not found'}, status=404)
+
+    # check if already reviewed
+    if Review.objects.filter(student=student, company=company).exists():
+        return Response({'error': 'You already reviewed this company'}, status=400)
+
+    # check if student had a validated agreement with this company
+    agreement = Agreement.objects.filter(
+        application__student=student,
+        application__offer__company=company,
+        status='validated'
+    ).first()
+
+    if not agreement:
+        return Response({'error': 'You can only review companies where you completed an internship'}, status=403)
+
+    Review.objects.create(
+        student=student, company=company,
+        agreement=agreement,
+        rating=rating, comment=comment
+    )
+    return Response({'message': 'Review submitted successfully!'}, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_my_agreements(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    agreements = Agreement.objects.filter(
+        application__student=student,
+        status='validated'
+    )
+
+    data = []
+    for a in agreements:
+        company = a.application.offer.company
+        already_reviewed = Review.objects.filter(student=student, company=company).exists()
+        data.append({
+            'agreement_id':   a.id,
+            'company_id':     company.id,
+            'company_name':   company.company_name,
+            'offer_title':    a.application.offer.title,
+            'pdf_url':        f'http://127.0.0.1:8000/media/{a.pdf_file.name}' if a.pdf_file else None,
+            'has_reviewed':   already_reviewed,
+        })
+
+    return Response(data)
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def superadmin_recent_activity(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    activity = []
+
+    # Recent applications
+    for app in Application.objects.select_related(
+        'student__user', 'offer__company'
+    ).order_by('-applied_at')[:10]:
+        activity.append({
+            'type':    'application',
+            'message': f"{app.student.user.full_name} applied to '{app.offer.title}' at {app.offer.company.company_name}",
+            'time':    app.applied_at,
+            'status':  app.status,
+        })
+
+    # Recent offers posted
+    for offer in Offer.objects.select_related('company').order_by('-created_at')[:10]:
+        activity.append({
+            'type':    'offer',
+            'message': f"{offer.company.company_name} posted a new offer: '{offer.title}'",
+            'time':    offer.created_at,
+            'status':  'new',
+        })
+
+    # Recent agreements
+    for ag in Agreement.objects.select_related(
+        'application__student__user', 'application__offer__company'
+    ).order_by('-validated_at')[:10]:
+        activity.append({
+            'type':    'agreement',
+            'message': f"Convention validated for {ag.application.student.user.full_name} at {ag.application.offer.company.company_name}",
+            'time':    ag.validated_at,
+            'status':  ag.status,
+        })
+
+    # Sort by time descending
+    activity.sort(key=lambda x: x['time'], reverse=True)
+    activity = activity[:8]
+
+    # Convert datetime to string AFTER sorting
+    for a in activity:
+        a['time'] = a['time'].strftime('%b %d, %Y · %H:%M')
+
+    return Response(activity)
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def upload_cv(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'])
+        student = StudentProfile.objects.get(user=user)
+    except Exception:
+        return Response({'error': 'Invalid token'}, status=401)
+
+    cv_file = request.FILES.get('cv_file')
+    if not cv_file:
+        return Response({'error': 'No file provided'}, status=400)
+    if not cv_file.name.endswith('.pdf'):
+        return Response({'error': 'Only PDF files are allowed'}, status=400)
+
+    student.cv_file = cv_file
+    student.save()
+    return Response({
+        'message': 'CV uploaded successfully!',
+        'cv_url': f'http://127.0.0.1:8000/media/{student.cv_file.name}'
+    })
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def superadmin_messages(request):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    messages = ContactMessage.objects.order_by('-created_at')
+    data = [{
+        'id':         m.id,
+        'name':       m.name,
+        'email':      m.email,
+        'subject':    m.subject,
+        'message':    m.message,
+        'created_at': m.created_at,
+    } for m in messages]
+    return Response(data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_message(request):
+    name    = request.data.get('name')
+    email   = request.data.get('email')
+    subject = request.data.get('subject', 'No subject')
+    message = request.data.get('message')
+
+    if not name or not email or not message:
+        return Response({'error': 'Name, email and message are required'}, status=400)
+
+    ContactMessage.objects.create(name=name, email=email, subject=subject, message=message)
+
+    superadmins = User.objects.filter(role='superadmin')
+    for admin in superadmins:
+        Notification.objects.create(
+            recipient=admin,
+            message=f"📩 New message from {name} ({email}): \"{subject}\""
+        )
+
+    return Response({'message': 'Message received!'}, status=201)

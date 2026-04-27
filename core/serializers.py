@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Agreement, User, CompanyProfile, Offer, Application, StudentProfile, SavedOffer, Review
+from .models import Agreement, User, CompanyProfile, Offer, Application, StudentProfile, SavedOffer, Review, WebsiteReview
 
 
 
@@ -57,15 +57,24 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
-    student_name = serializers.SerializerMethodField()
+    student_name   = serializers.SerializerMethodField()
     student_skills = serializers.SerializerMethodField()
     student_github = serializers.SerializerMethodField()
-    offer_title = serializers.SerializerMethodField()
+    student_email  = serializers.SerializerMethodField()
+    offer_title    = serializers.SerializerMethodField()
+    company_id     = serializers.IntegerField(source='offer.company.id', read_only=True)
+    company_name   = serializers.CharField(source='offer.company.company_name', read_only=True)
+    wilaya         = serializers.CharField(source='offer.wilaya', read_only=True)
+    agreement_id   = serializers.SerializerMethodField()
+    has_reviewed   = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
-        fields = ['id', 'student_name', 'student_skills',
-                  'student_github', 'offer_title', 'status', 'applied_at']
+        fields = [
+            'id', 'student_name', 'student_skills', 'student_email',
+            'student_github', 'offer_title', 'status', 'applied_at',
+            'company_id', 'company_name', 'wilaya', 'agreement_id', 'has_reviewed',
+        ]
 
     def get_student_name(self, obj):
         return obj.student.user.full_name
@@ -79,10 +88,26 @@ class ApplicationSerializer(serializers.ModelSerializer):
     def get_offer_title(self, obj):
         return obj.offer.title
 
+    def get_student_email(self, obj):
+        return obj.student.user.email
+
+    def get_agreement_id(self, obj):
+        from .models import Agreement
+        ag = Agreement.objects.filter(application=obj).first()
+        return ag.id if ag else None
+
+    def get_has_reviewed(self, obj):
+        from .models import Review
+        return Review.objects.filter(
+            student=obj.student,
+            company=obj.offer.company
+        ).exists()
+
 
 class StudentProfileSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='user.full_name', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
+    full_name       = serializers.CharField(source='user.full_name', read_only=True)
+    email           = serializers.EmailField(source='user.email', read_only=True)
+    university_name = serializers.CharField(source='university.name', read_only=True)
 
     class Meta:
         model = StudentProfile
@@ -92,7 +117,9 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'skills',
             'github_link',
             'wilaya',
-            'university',
+            'university',      # ← ID for writing
+            'university_name', # ← name for reading/display
+            'cv_file',
         ]
 
 
@@ -170,3 +197,12 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def get_company_name(self, obj):
         return obj.company.company_name
+
+
+class WebsiteReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_role = serializers.CharField(source='user.role', read_only=True)
+
+    class Meta:
+        model  = WebsiteReview
+        fields = ['id', 'user_name', 'user_role', 'rating', 'comment', 'created_at']

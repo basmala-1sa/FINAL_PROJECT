@@ -1,18 +1,40 @@
 from django.db import models
 
+
+# ============================================
+#              UNIVERSITY TABLE  ← NEW
+# ============================================
+class University(models.Model):
+    name      = models.CharField(max_length=255, unique=True)
+    wilaya    = models.CharField(max_length=100)
+    email     = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    added_at  = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
 # ============================================
 #                 USER TABLE
 # ============================================
 class User(models.Model):
     ROLE_CHOICES = [
-        ('student', 'Student'),
-        ('company', 'Company'),
-        ('admin', 'Admin'),
+        ('student',    'Student'),
+        ('company',    'Company'),
+        ('admin',      'Admin'),
+        ('superadmin', 'SuperAdmin'),  # ← NEW
     ]
     full_name  = models.CharField(max_length=255)
     email      = models.EmailField(unique=True)
     password   = models.CharField(max_length=255)
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    university = models.ForeignKey(          # ← NEW (for admin accounts)
+        University,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='admins'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -27,7 +49,13 @@ class StudentProfile(models.Model):
     skills      = models.TextField(blank=True)
     github_link = models.URLField(blank=True)
     wilaya      = models.CharField(max_length=100, blank=True)
-    university  = models.CharField(max_length=255, blank=True)
+    cv_file = models.FileField(upload_to='cvs/', blank=True, null=True)
+    university  = models.ForeignKey(         # ← CHANGED from CharField to ForeignKey
+        University,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='students'
+    )
 
     def __str__(self):
         return f"Profile of {self.user.full_name}"
@@ -76,15 +104,15 @@ class Offer(models.Model):
 # ============================================
 class Application(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
+        ('pending',  'Pending'),
         ('accepted', 'Accepted'),
-        ('refused', 'Refused'),
+        ('refused',  'Refused'),
     ]
-    student    = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    offer      = models.ForeignKey(Offer, on_delete=models.CASCADE)
+    student      = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    offer        = models.ForeignKey(Offer, on_delete=models.CASCADE)
     cover_letter = models.TextField(blank=True)
-    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    applied_at = models.DateTimeField(auto_now_add=True)
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    applied_at   = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('student', 'offer')
@@ -98,9 +126,9 @@ class Application(models.Model):
 # ============================================
 class Agreement(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
+        ('pending',   'Pending'),
         ('validated', 'Validated'),
-        ('rejected', 'Rejected'),
+        ('rejected',  'Rejected'),
     ]
     application  = models.OneToOneField(Application, on_delete=models.CASCADE)
     validated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -135,10 +163,9 @@ class SavedOffer(models.Model):
 
     class Meta:
         unique_together = ('student', 'offer')
-        # student cannot save the same offer twice! ✅
 
     def __str__(self):
-        return f"{self.student.user.full_name} saved {self.offer.title}"       
+        return f"{self.student.user.full_name} saved {self.offer.title}"
 
 
 # ============================================
@@ -161,7 +188,49 @@ class Review(models.Model):
 
     class Meta:
         unique_together = ('student', 'company')
-        # student can only review a company once! ✅
 
     def __str__(self):
         return f"{self.student.user.full_name} reviewed {self.company.company_name}"
+
+
+# ============================================
+#          WEBSITE REVIEW TABLE  ← NEW
+# ============================================
+class WebsiteReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'), (2, '2 Stars'), (3, '3 Stars'),
+        (4, '4 Stars'), (5, '5 Stars'),
+    ]
+    user       = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating     = models.IntegerField(choices=RATING_CHOICES)
+    comment    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.full_name} reviewed the website"
+
+
+
+class PublicReview(models.Model):
+    company    = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE)
+    name       = models.CharField(max_length=255, default="Anonymous")
+    rating     = models.IntegerField()
+    comment    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} reviewed {self.company.company_name}"
+
+
+
+class ContactMessage(models.Model):
+    name       = models.CharField(max_length=255)
+    email      = models.EmailField()
+    subject    = models.CharField(max_length=255, blank=True)
+    message    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} — {self.subject}"
+
+
