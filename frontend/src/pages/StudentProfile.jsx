@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { colors, GLOBAL_STYLES, Sidebar, PageShell } from "./StudentLayout";
 import { getProfile } from '../api'
 import { updateProfile } from '../api'
+import { FiFileText, FiUpload, FiDownload } from "react-icons/fi";
 
 const WILAYAS = [
   "Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Béjaïa","Biskra","Béchar",
@@ -34,6 +35,11 @@ export default function StudentProfile() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
 
+  const [cvFile, setCvFile]     = useState(null);
+const [cvUploading, setCvUp]  = useState(false);
+const [cvMessage, setCvMsg]   = useState(null);
+const [currentCv, setCurrentCv] = useState(null);
+
   // ── Load profile on mount ─────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -54,6 +60,7 @@ getProfile()
         university:  data.university  || "",  // ← this is now the ID
       })
     }
+    setCurrentCv(data.cv_file || null);
     setLoading(false)
   })
   .catch(() => setLoading(false))
@@ -108,6 +115,33 @@ getProfile()
 setSaving(false)
   };
 
+
+  const handleCvUpload = async () => {
+    if (!cvFile) return;
+    setCvUp(true);
+    setCvMsg(null);
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("cv_file", cvFile);
+    try {
+        const res = await fetch("http://127.0.0.1:8000/api/student/upload-cv/", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData,
+        });
+        const data = await res.json();
+        if (res.ok) {
+            setCvMsg({ type: "success", text: "CV uploaded successfully ✅" });
+            setCurrentCv(data.cv_url);
+            setCvFile(null);
+        } else {
+            setCvMsg({ type: "error", text: data.error || "Upload failed" });
+        }
+    } catch {
+        setCvMsg({ type: "error", text: "Network error" });
+    }
+    setCvUp(false);
+};
 const [universities, setUniversities] = useState([]);
 
 useEffect(() => {
@@ -304,7 +338,50 @@ useEffect(() => {
   </select>
 </div>
             </div>
+  {/* CV Upload */}
+<div style={{ marginBottom:"32px", padding:"24px", borderRadius:"12px", background:colors.offWhite, border:`1.5px solid rgba(194,160,114,0.25)` }}>
+    <div style={{ fontSize:"10px",color:colors.gold,letterSpacing:"2px",marginBottom:"16px" }}>CURRICULUM VITAE</div>
 
+    {/* Current CV */}
+    {currentCv && (
+        <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px",padding:"12px 16px",background:colors.white,borderRadius:"10px",border:`1px solid rgba(194,160,114,0.2)` }}>
+            <div style={{ width:"36px",height:"36px",borderRadius:"8px",background:`linear-gradient(135deg,${colors.gold},${colors.lightGold})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                <FiFileText size={16} color={colors.navyDark}/>
+            </div>
+            <div style={{ flex:1 }}>
+                <div style={{ fontSize:"13px",fontWeight:"bold",color:colors.navyDark }}>Current CV</div>
+                <div style={{ fontSize:"11px",color:"#888",marginTop:"2px" }}>PDF uploaded</div>
+            </div>
+            <a href={currentCv} target="_blank" rel="noreferrer" style={{ display:"flex",alignItems:"center",gap:"6px",padding:"7px 16px",background:`linear-gradient(135deg,${colors.gold},${colors.lightGold})`,borderRadius:"8px",fontSize:"12px",fontWeight:"bold",color:colors.navyDark,textDecoration:"none" }}>
+                <FiDownload size={13}/> View
+            </a>
+        </div>
+    )}
+
+    {/* Upload new */}
+    <div style={{ display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap" }}>
+        <label style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 20px",borderRadius:"10px",border:`1.5px dashed rgba(194,160,114,0.5)`,cursor:"pointer",background:colors.white,fontSize:"13px",color:colors.navyDark,transition:"all .2s" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=colors.gold}
+            onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(194,160,114,0.5)"}
+        >
+            <FiUpload size={15} color={colors.gold}/>
+            {cvFile ? cvFile.name : "Choose PDF file…"}
+            <input type="file" accept=".pdf" onChange={e=>setCvFile(e.target.files[0])} style={{ display:"none" }}/>
+        </label>
+
+        {cvFile && (
+            <button onClick={handleCvUpload} disabled={cvUploading} style={{ padding:"11px 24px",borderRadius:"10px",border:"none",cursor:cvUploading?"not-allowed":"pointer",background:`linear-gradient(135deg,${colors.gold},${colors.lightGold})`,color:colors.navyDark,fontSize:"13px",fontWeight:"bold",fontFamily:"Georgia,serif" }}>
+                {cvUploading ? "Uploading…" : "✦ Upload CV"}
+            </button>
+        )}
+    </div>
+
+    {cvMessage && (
+        <div style={{ marginTop:"12px",padding:"10px 14px",borderRadius:"8px",fontSize:"13px",fontWeight:"bold",background:cvMessage.type==="success"?"#dcfce7":"#fee2e2",color:cvMessage.type==="success"?"#16a34a":"#dc2626",border:`1px solid ${cvMessage.type==="success"?"#16a34a":"#dc2626"}` }}>
+            {cvMessage.text}
+        </div>
+    )}
+</div>
             {/* Save button */}
             <button className="btn-gold" onClick={handleSave} disabled={saving} style={{
               padding:"13px 40px",borderRadius:"10px",border:"none",cursor:saving?"not-allowed":"pointer",

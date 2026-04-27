@@ -49,12 +49,25 @@ export function ContactPage() {
   const [heroRef, heroVisible] = useReveal();
   const [cardsRef, cardsVisible] = useReveal();
 
-  const handleSubmit = () => {
-    if (!form.name || !form.email || !form.message) return;
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
-    setForm({ name:"", email:"", subject:"", message:"" });
-  };
+  const handleSubmit = async () => {
+  if (!form.name || !form.email || !form.message) return;
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/contact/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      setSent(true);
+      setTimeout(() => setSent(false), 4000);
+      setForm({ name:"", email:"", subject:"", message:"" });
+    } else {
+      alert("Failed to send. Try again.");
+    }
+  } catch {
+    alert("Network error. Try again.");
+  }
+};
 
   const contacts = [
     { icon:<FiMail size={26}/>,    label:"Email Us",       value:"contact@stag.io",          sub:"We reply within 24 hours",      href:"mailto:contact@stag.io",    color:C.gold     },
@@ -201,8 +214,8 @@ export function AboutPage() {
   ];
 
   const team = [
-    { name:"Basmala",  role:"Full-Stack Developer", uni:"Université Constantine 2", initial:"B" },
-    { name:"Teammate", role:"Full-Stack Developer", uni:"Université Constantine 2", initial:"T" },
+    { name:"Basmala Saouli",  role:"Full-Stack Developer", uni:"Université Constantine 2", initial:"B" },
+    { name:"Aroua Saouli ", role:"Full-Stack Developer", uni:"Université Constantine 2", initial:"A" },
   ];
 
   return (

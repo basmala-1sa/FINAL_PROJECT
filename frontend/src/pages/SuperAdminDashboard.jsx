@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { FiHome, FiLogOut, FiPlus, FiUsers, FiToggleLeft, FiToggleRight, FiX, FiSave, FiGlobe, FiUser, FiBriefcase } from "react-icons/fi";
+import { FiHome, FiLogOut, FiPlus, FiUsers, FiToggleLeft, FiToggleRight, FiX, FiSave, FiGlobe, FiUser, FiBriefcase, FiCheckCircle  ,FiFileText, FiMail,FiInbox } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell";
 
 
 const colors = {
@@ -14,7 +15,98 @@ const sidebarLinks = [
   { icon: <FiHome />,  label: "Dashboard",    key: "dashboard"    },
   { icon: <FiUsers />, label: "Universities", key: "universities" },
   { icon: <FiUsers />, label: "Admins",       key: "admins"       },
+  { icon: <FiMail />,  label: "Messages",     key: "messages"     },
 ];
+
+
+
+function RecentActivity({ token, colors }) {
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/superadmin/activity/", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setActivity(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+ const iconMap = {
+    application: <FiFileText size={18} color={colors.gold} />,
+    offer:       <FiBriefcase size={18} color={colors.gold} />,
+    agreement:   <FiCheckCircle size={18} color="#16a34a" />,
+};
+
+  const statusColors = {
+    pending:   { bg: "rgba(194,160,114,0.12)", color: colors.gold },
+    accepted:  { bg: "#dcfce7",                color: "#16a34a"   },
+    refused:   { bg: "#fee2e2",                color: "#dc2626"   },
+    validated: { bg: "#dcfce7",                color: "#16a34a"   },
+    rejected:  { bg: "#fee2e2",                color: "#dc2626"   },
+    new:       { bg: "#eff6ff",                color: "#3b82f6"   },
+  };
+
+  return (
+    <div style={{
+      background: "#fff", borderRadius: "16px", padding: "32px",
+      boxShadow: "0 4px 20px rgba(17,34,80,0.07)", position: "relative", overflow: "hidden",
+    }}>
+      <div style={{ position: "absolute", left: 0, top: "20%", bottom: "20%", width: "3px", background: `linear-gradient(180deg, transparent, ${colors.gold}, transparent)`, borderRadius: "3px" }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+        <div>
+          <div style={{ fontSize: "10px", color: colors.gold, letterSpacing: "2px", marginBottom: "4px" }}>OVERVIEW</div>
+          <h2 style={{ fontSize: "18px", color: colors.navyDark, margin: 0, fontWeight: "bold" }}>Recent Activity</h2>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px", color: colors.gold }}>Loading...</div>
+      ) : activity.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px", color: "#bbb" }}>
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>📋</div>
+          <p>No activity yet on the platform.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {activity.map((a, i) => {
+            const sc = statusColors[a.status] || statusColors.new;
+            return (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "14px 0", borderBottom: "1px solid rgba(194,160,114,0.1)",
+                flexWrap: "wrap", gap: "8px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width:"42px", height:"42px", borderRadius:"10px", flexShrink:0,
+  background:"rgba(194,160,114,0.08)", border:"1px solid rgba(194,160,114,0.2)",
+  display:"flex", alignItems:"center", justifyContent:"center",
+}}>
+  {iconMap[a.type]}
+                  </div>
+                  <div style={{ fontSize: "13px", color: colors.navyDark, maxWidth: "420px", lineHeight: 1.5 }}>
+                    {a.message}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                  <span style={{ fontSize: "11px", color: "#bbb" }}>{a.time}</span>
+                  <span style={{
+                    padding: "3px 12px", borderRadius: "20px", fontSize: "10px", fontWeight: "bold",
+                    background: sc.bg, color: sc.color, letterSpacing: ".5px",
+                  }}>
+                    {a.status.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SuperAdminDashboard() {
   const navigate  = useNavigate();
@@ -53,7 +145,23 @@ export default function SuperAdminDashboard() {
       if (Array.isArray(data)) setUniversities(data);
     } catch {}
   };
+const [messages, setMessages] = useState([]);
 
+useEffect(() => {
+  fetchUniversities();
+  fetchAdmins();
+  fetchMessages();  // ← ADD
+}, []);
+
+const fetchMessages = async () => {
+  try {
+    const res  = await fetch("http://127.0.0.1:8000/api/superadmin/messages/", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (Array.isArray(data)) setMessages(data);
+  } catch {}
+};
   const fetchAdmins = async () => {
     try {
       const res  = await fetch("http://127.0.0.1:8000/api/superadmin/admins/", {
@@ -177,14 +285,18 @@ export default function SuperAdminDashboard() {
             border: `2px solid rgba(194,160,114,0.3)`,
             display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px",
           }}>
-            <div style={{
-              width: "44px", height: "44px", borderRadius: "50%",
-              background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "18px", fontWeight: "bold", color: colors.navyDark,
-            }}>
-              {adminName.charAt(0).toUpperCase()}
-            </div>
+           <div
+  onClick={() => navigate("/")}
+  style={{
+    width: "44px", height: "44px", borderRadius: "50%",
+    background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "18px", fontWeight: "bold", color: colors.navyDark,
+    cursor: "pointer",
+  }}
+>
+  {adminName.charAt(0).toUpperCase()}
+</div>
           </div>
           <div style={{ fontSize: "22px", fontWeight: "bold", color: colors.gold, letterSpacing: "4px" }}>STAG.IO</div>
           <div style={{ fontSize: "9px", color: colors.lightGold, letterSpacing: "3px", marginTop: "2px", opacity: 0.6 }}>✦ SUPER ADMIN ✦</div>
@@ -242,9 +354,15 @@ export default function SuperAdminDashboard() {
 
       {/* ══════════ MAIN CONTENT ══════════ */}
       <div style={{ marginLeft: "270px", flex: 1, padding: "48px 40px", animation: "fadeUp 0.6s ease forwards" }}>
-        <div style={{ height: "2px", background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold}, transparent)`, marginBottom: "40px", borderRadius: "2px" }} />
+       <div style={{ height: "2px", background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold}, transparent)`, marginBottom: "40px", borderRadius: "2px" }} />
 
-        {/* Action message */}
+<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
+  <NotificationBell />
+</div>
+
+{/* Action message */}
+
+        
         {actionMsg && (
           <div style={{
             background: actionMsg.startsWith("✅") ? "#eafaf1" : "#fdf2f2",
@@ -258,33 +376,36 @@ export default function SuperAdminDashboard() {
 
         {/* ── DASHBOARD TAB ── */}
         {active === "dashboard" && (
-          <>
-            <div style={{ marginBottom: "40px" }}>
-              <div style={{ fontSize: "11px", color: colors.gold, letterSpacing: "3px", marginBottom: "8px" }}>✦ PLATFORM OVERVIEW</div>
-              <h1 style={{ fontSize: "34px", color: colors.navyDark, fontWeight: "bold", margin: 0 }}>Super Admin</h1>
-              <p style={{ color: "#888", marginTop: "8px", fontSize: "14px" }}>Manage universities and administrators across the platform.</p>
-            </div>
+  <>
+    <div style={{ marginBottom: "40px" }}>
+      <div style={{ fontSize: "11px", color: colors.gold, letterSpacing: "3px", marginBottom: "8px" }}>✦ PLATFORM OVERVIEW</div>
+      <h1 style={{ fontSize: "34px", color: colors.navyDark, fontWeight: "bold", margin: 0 }}>Super Admin</h1>
+      <p style={{ color: "#888", marginTop: "8px", fontSize: "14px" }}>Manage universities and administrators across the platform.</p>
+    </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginBottom: "40px" }}>
-              {[
-                { label: "Universities", value: universities.length, icon: <FiGlobe size={28} style={{ color: colors.gold }} />   },
-{ label: "Admins",       value: admins.length,       icon: <FiUser size={28} style={{ color: colors.gold }} />    },
-{ label: "Students",     value: totalStudents,        icon: <FiBriefcase size={28} style={{ color: colors.gold }} /> },
-              ].map((card, i) => (
-                <div key={i} className="card-hover" style={{
-                  background: "#fff", borderRadius: "16px", padding: "28px 24px",
-                  boxShadow: "0 4px 20px rgba(17,34,80,0.07)", position: "relative", overflow: "hidden",
-                }}>
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold})`, borderRadius: "16px 16px 0 0" }} />
-                  <div style={{ fontSize: "32px", marginBottom: "12px" }}>{card.icon}</div>
-                  <div style={{ fontSize: "36px", fontWeight: "bold", color: colors.navyDark, lineHeight: 1 }}>{card.value}</div>
-                  <div style={{ fontSize: "12px", color: "#999", marginTop: "6px", letterSpacing: "0.5px" }}>{card.label}</div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+    {/* Stats cards */}
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginBottom: "40px" }}>
+      {[
+        { label: "Universities", value: universities.length, icon: <FiGlobe size={28} style={{ color: colors.gold }} /> },
+        { label: "Admins",       value: admins.length,       icon: <FiUser size={28} style={{ color: colors.gold }} /> },
+        { label: "Students",     value: totalStudents,        icon: <FiBriefcase size={28} style={{ color: colors.gold }} /> },
+      ].map((card, i) => (
+        <div key={i} className="card-hover" style={{
+          background: "#fff", borderRadius: "16px", padding: "28px 24px",
+          boxShadow: "0 4px 20px rgba(17,34,80,0.07)", position: "relative", overflow: "hidden",
+        }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, ${colors.gold}, ${colors.lightGold})`, borderRadius: "16px 16px 0 0" }} />
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>{card.icon}</div>
+          <div style={{ fontSize: "36px", fontWeight: "bold", color: colors.navyDark, lineHeight: 1 }}>{card.value}</div>
+          <div style={{ fontSize: "12px", color: "#999", marginTop: "6px" }}>{card.label}</div>
+        </div>
+      ))}
+    </div>
 
+    {/* Recent Activity */}
+    <RecentActivity token={token} colors={colors} />
+  </>
+)}
         {/* ── UNIVERSITIES TAB ── */}
         {active === "universities" && (
           <>
@@ -380,7 +501,71 @@ export default function SuperAdminDashboard() {
             </div>
           </>
         )}
+{/* ── MESSAGES TAB ── */}
+{active === "messages" && (
+  <>
+    <div style={{ marginBottom: "32px" }}>
+      <div style={{ fontSize: "11px", color: colors.gold, letterSpacing: "3px", marginBottom: "8px" }}>✦ INBOX</div>
+      <h1 style={{ fontSize: "32px", color: colors.navyDark, fontWeight: "bold", margin: 0 }}>Contact Messages</h1>
+      <p style={{ color: "#888", marginTop: "6px", fontSize: "14px" }}>{messages.length} message{messages.length !== 1 ? "s" : ""} received</p>
+    </div>
 
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {messages.map((m, i) => (
+        <div key={m.id} className="card-hover" style={{
+          background: "#fff", borderRadius: "16px", padding: "24px 28px",
+          boxShadow: "0 4px 20px rgba(17,34,80,0.07)",
+          borderLeft: `4px solid ${colors.gold}`,
+          animation: `fadeUp 0.4s ease ${i * 0.08}s both`,
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div style={{
+                width: "46px", height: "46px", borderRadius: "50%", flexShrink: 0,
+                background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "18px", fontWeight: "bold", color: colors.navyDark,
+              }}>
+                {m.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize: "15px", fontWeight: "bold", color: colors.navyDark }}>{m.name}</div>
+                <div style={{ fontSize: "12px", color: colors.gold, marginTop: "2px" }}>{m.email}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: "11px", color: "#bbb" }}>
+              {new Date(m.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+            </div>
+          </div>
+
+          {m.subject && (
+            <div style={{ marginTop: "16px", fontSize: "13px", fontWeight: "bold", color: colors.navyDark }}>
+              Subject: {m.subject}
+            </div>
+          )}
+
+          <div style={{ marginTop: "10px", fontSize: "14px", color: "#555", lineHeight: 1.7, background: colors.offWhite, padding: "14px 18px", borderRadius: "10px" }}>
+            {m.message}
+          </div>
+
+          <div style={{ marginTop: "14px" }}>
+            <a href={`mailto:${m.email}?subject=Re: ${m.subject || 'Your message'}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`, borderRadius: "8px", fontSize: "12px", fontWeight: "bold", color: colors.navyDark, textDecoration: "none" }}>
+              <FiMail size={13}/> Reply via Email
+            </a>
+          </div>
+        </div>
+      ))}
+
+      {messages.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px", color: "#bbb", background: "#fff", borderRadius: "16px" }}>
+          <div style={{ color: "#ddd", marginBottom: "12px" }}><FiMail size={40} /></div>
+          <p>No messages yet.</p>
+        </div>
+      )}
+    </div>
+  </>
+)}
         {/* ── ADMINS TAB ── */}
         {active === "admins" && (
           <>

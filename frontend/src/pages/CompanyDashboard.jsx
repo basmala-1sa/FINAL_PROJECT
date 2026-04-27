@@ -169,27 +169,35 @@ if (Array.isArray(apps)) {
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 12px",
             }}>
-              <div style={{
-                width: "44px", height: "44px",
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "18px", fontWeight: "bold",
-                color: colors.navyDark,
-              }}>
-                {companyName.charAt(0).toUpperCase()}
-              </div>
+              <div
+  onClick={() => navigate("/")}
+  style={{
+    width: "44px", height: "44px",
+    borderRadius: "50%",
+    background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "18px", fontWeight: "bold",
+    color: colors.navyDark,
+    cursor: "pointer",
+  }}
+>
+  {companyName.charAt(0).toUpperCase()}
+</div>
             </div>
           </div>
 
-          <div style={{
-            fontSize: "22px",
-            fontWeight: "bold",
-            color: colors.gold,
-            letterSpacing: "4px",
-          }}>
-            STAG.IO
-          </div>
+         <div
+  onClick={() => navigate("/")}
+  style={{
+    fontSize: "22px",
+    fontWeight: "bold",
+    color: colors.gold,
+    letterSpacing: "4px",
+    cursor: "pointer",
+  }}
+>
+  STAG.IO
+</div>
           <div style={{
             fontSize: "9px",
             color: colors.lightGold,

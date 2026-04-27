@@ -122,16 +122,20 @@ export default function AdminDashboard() {
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 12px",
             }}>
-              <div style={{
-                width: "44px", height: "44px",
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "18px", fontWeight: "bold",
-                color: colors.navyDark,
-              }}>
-                {adminName.charAt(0).toUpperCase()}
-              </div>
+              <div
+  onClick={() => navigate("/")}
+  style={{
+    width: "44px", height: "44px",
+    borderRadius: "50%",
+    background: `linear-gradient(135deg, ${colors.gold}, ${colors.lightGold})`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "18px", fontWeight: "bold",
+    color: colors.navyDark,
+    cursor: "pointer",
+  }}
+>
+  {adminName.charAt(0).toUpperCase()}
+</div>
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiGrid, FiUser, FiSearch, FiFileText, FiBookmark } from "react-icons/fi";
 import NotificationBell from "./NotificationBell";
+import { useNavigate } from "react-router-dom";
 
 
 export const colors = {
@@ -61,6 +62,7 @@ export function Sidebar({ active, onNavigate, role = "STUDENT PORTAL", nameKey =
   const [hovered, setHovered] = useState(null);
   const name = localStorage.getItem(nameKey) || "Student";
   const initial = name.charAt(0).toUpperCase();
+  const navigate = useNavigate()
 
   return (
     <div className="sidebar-fixed" style={{
@@ -81,17 +83,19 @@ export function Sidebar({ active, onNavigate, role = "STUDENT PORTAL", nameKey =
 
       {/* Logo + user */}
       <div style={{ padding: "28px 24px 20px", borderBottom: `1px solid rgba(194,160,114,0.2)`, textAlign: "center" }}>
-        <div style={{ width:"60px",height:"60px",borderRadius:"50%",border:`2px solid rgba(194,160,114,0.3)`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px" }}>
-          <div style={{ width:"44px",height:"44px",borderRadius:"50%",background:`linear-gradient(135deg,${colors.gold},${colors.lightGold})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",fontWeight:"bold",color:colors.navyDark }}>
-            {initial}
-          </div>
-        </div>
-        <div style={{ fontSize:"22px",fontWeight:"bold",color:colors.gold,letterSpacing:"4px" }}>STAG.IO</div>
-        <div style={{ fontSize:"9px",color:colors.lightGold,letterSpacing:"3px",marginTop:"2px",opacity:.6 }}>✦ {role} ✦</div>
-        <div style={{ height:"1px",background:`linear-gradient(90deg,transparent,${colors.gold},transparent)`,marginTop:"16px" }}/>
-        <div style={{ color:colors.offWhite,fontSize:"13px",marginTop:"12px",fontWeight:"bold" }}>{name}</div>
-        <div style={{ color:colors.gold,fontSize:"10px",letterSpacing:"2px",marginTop:"2px",opacity:.7 }}>STUDENT</div>
-      </div>
+  <div style={{ width:"60px",height:"60px",borderRadius:"50%",border:`2px solid rgba(194,160,114,0.3)`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px" }}>
+    <div
+      onClick={() => navigate("/")}
+      style={{ width:"44px",height:"44px",borderRadius:"50%",background:`linear-gradient(135deg,${colors.gold},${colors.lightGold})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",fontWeight:"bold",color:colors.navyDark,cursor:"pointer" }}>
+      {initial}
+    </div>
+  </div>
+  <div style={{ fontSize:"22px",fontWeight:"bold",color:colors.gold,letterSpacing:"4px" }}>STAG.IO</div>
+  <div style={{ fontSize:"9px",color:colors.lightGold,letterSpacing:"3px",marginTop:"2px",opacity:.6 }}>✦ {role} ✦</div>
+  <div style={{ height:"1px",background:`linear-gradient(90deg,transparent,${colors.gold},transparent)`,marginTop:"16px" }}/>
+  <div style={{ color:colors.offWhite,fontSize:"13px",marginTop:"12px",fontWeight:"bold" }}>{name}</div>
+  <div style={{ color:colors.gold,fontSize:"10px",letterSpacing:"2px",marginTop:"2px",opacity:.7 }}>STUDENT</div>
+</div>
       
 
       {/* Nav */}

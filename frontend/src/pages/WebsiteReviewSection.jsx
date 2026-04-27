@@ -22,16 +22,96 @@ function Stars({ rating, size = 16, interactive = false, onRate }) {
   );
 }
 
+function LoginGateModal({ onClose }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(10,20,50,0.7)",
+      backdropFilter: "blur(6px)", zIndex: 9999,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: "20px",
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: "20px", padding: "40px 36px",
+        width: "100%", maxWidth: "420px",
+        boxShadow: "0 30px 80px rgba(17,34,80,0.25)", position: "relative",
+        textAlign: "center", fontFamily: "Georgia, serif",
+      }}>
+        {/* Gold top bar */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: "3px",
+          background: `linear-gradient(90deg, ${C.gold}, #f0d080)`,
+          borderRadius: "20px 20px 0 0",
+        }} />
+
+        {/* Icon */}
+        <div style={{
+          width: "60px", height: "60px", borderRadius: "50%",
+          background: `linear-gradient(135deg, rgba(224,197,143,0.2), rgba(224,197,143,0.05))`,
+          border: `1.5px solid rgba(224,197,143,0.4)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 20px", fontSize: "26px",
+        }}>🎓</div>
+
+        <div style={{ fontSize: "10px", color: C.gold, letterSpacing: "3px", marginBottom: "10px" }}>
+          ✦ REVIEWS
+        </div>
+        <h2 style={{ fontSize: "20px", color: C.navy, fontWeight: "bold", margin: "0 0 14px" }}>
+          Share Your Experience
+        </h2>
+        <p style={{ fontSize: "14px", color: "#666", lineHeight: 1.7, margin: "0 0 28px" }}>
+          Only students who have completed a validated internship can leave a review.
+          Please sign in to share your experience with the community.
+        </p>
+
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: "11px 20px", background: "none",
+              border: "1.5px solid #ddd", borderRadius: "10px",
+              cursor: "pointer", fontSize: "13px", fontFamily: "Georgia, serif",
+              color: "#888", transition: "border-color 0.2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "#bbb"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = "#ddd"}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => window.location.href = "/login"}
+            style={{
+              flex: 2, padding: "11px 20px",
+              background: `linear-gradient(135deg, ${C.gold}, #f0d080)`,
+              border: "none", borderRadius: "10px",
+              cursor: "pointer", fontSize: "13px", fontWeight: "bold",
+              color: C.navy, fontFamily: "Georgia, serif",
+              boxShadow: "0 4px 14px rgba(224,197,143,0.35)",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+          >
+            ✦ Sign In
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WebsiteReviewSection() {
-  const [reviews, setReviews]   = useState([]);
-  const [avg, setAvg]           = useState(0);
-  const [total, setTotal]       = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [rating, setRating]     = useState(0);
-  const [comment, setComment]   = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [msg, setMsg]           = useState(null);
+  const [reviews, setReviews]         = useState([]);
+  const [avg, setAvg]                 = useState(0);
+  const [total, setTotal]             = useState(0);
+  const [showForm, setShowForm]       = useState(false);
+  const [showGate, setShowGate]       = useState(false);
+  const [rating, setRating]           = useState(0);
+  const [comment, setComment]         = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [msg, setMsg]                 = useState(null);
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const role  = typeof window !== "undefined" ? localStorage.getItem("role")  : null;
+  const isStudent = token && role === "student";
 
   useEffect(() => { fetchReviews(); }, []);
 
@@ -45,8 +125,16 @@ export default function WebsiteReviewSection() {
     } catch {}
   };
 
+  const handleLeaveReviewClick = () => {
+    if (!isStudent) {
+      setShowGate(true);
+    } else {
+      setShowForm(!showForm);
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!rating) return setMsg({ type: "error", text: "Please select a rating!" });
+    if (!rating)        return setMsg({ type: "error", text: "Please select a rating!" });
     if (!comment.trim()) return setMsg({ type: "error", text: "Please write something!" });
     setLoading(true);
     try {
@@ -87,19 +175,21 @@ export default function WebsiteReviewSection() {
               <span style={{ color: C.shell, fontSize: "14px" }}>({total} reviews)</span>
             </div>
           </div>
-          {token && (
-            <button onClick={() => setShowForm(!showForm)} style={{
+
+          {/* Always visible — shows gate if not a logged-in student */}
+          <button
+            onClick={handleLeaveReviewClick}
+            style={{
               padding: "12px 24px", borderRadius: "10px", border: `1.5px solid rgba(224,197,143,0.4)`,
               background: "transparent", color: C.gold, fontSize: "13px", fontWeight: "bold",
               cursor: "pointer", fontFamily: "Georgia, serif", letterSpacing: "1px",
               transition: "all 0.3s ease",
             }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(224,197,143,0.1)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              {showForm ? "✕ CANCEL" : "✦ LEAVE A REVIEW"}
-            </button>
-          )}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(224,197,143,0.1)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            {showForm ? "✕ CANCEL" : "✦ LEAVE A REVIEW"}
+          </button>
         </div>
 
         {/* Message */}
@@ -112,8 +202,8 @@ export default function WebsiteReviewSection() {
           }}>{msg.text}</div>
         )}
 
-        {/* Review form */}
-        {showForm && (
+        {/* Review form — only shown when logged-in student clicks */}
+        {showForm && isStudent && (
           <div style={{
             background: "rgba(255,255,255,0.05)", borderRadius: "16px", padding: "28px 32px",
             marginBottom: "40px", border: `1px solid rgba(224,197,143,0.2)`,
@@ -199,6 +289,9 @@ export default function WebsiteReviewSection() {
           </div>
         )}
       </div>
+
+      {/* Login gate modal */}
+      {showGate && <LoginGateModal onClose={() => setShowGate(false)} />}
     </section>
   );
 }
