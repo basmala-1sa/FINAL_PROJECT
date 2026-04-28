@@ -226,6 +226,13 @@ export default function MyApplications() {
                         <div style={{ fontWeight: "bold", color: colors.navyDark, fontSize: "14px", marginBottom: "3px" }}>{app.offer_title}</div>
                         <div style={{ fontSize: "12px", color: colors.sapphire, fontWeight: "bold" }}>{app.company_name || app.offer_title}</div>
                         <div style={{ fontSize: "11px", color: "#bbb", marginTop: "2px" }}>📍 {app.wilaya} · Applied {app.applied_at}</div>
+                        {(app.offer_start_date || app.offer_end_date) && (
+                          <div style={{ fontSize: "11px", color: "#999", marginTop: "3px" }}>
+                            📅 {app.offer_start_date ? new Date(app.offer_start_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : "?"}
+                            {" → "}
+                            {app.offer_end_date ? new Date(app.offer_end_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : "?"}
+                          </div>
+                        )}
                       </div>
                     </div>
 

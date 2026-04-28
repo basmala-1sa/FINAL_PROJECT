@@ -26,6 +26,7 @@ const sidebarLinks = [
 const emptyForm = {
   title: "", description: "", skills: "",
   wilaya: "", type: "presentiel", deadline: "",
+  start_date: "", end_date: "",
 };
 
 export default function MyOffers() {
@@ -82,6 +83,8 @@ const openEdit = (offer) => {
     wilaya:      offer.wilaya,
     type:        offer.type,
     deadline:    offer.deadline || "",
+    start_date:  offer.start_date || "",
+    end_date:    offer.end_date || "",
   });
   setShowModal(true);
 };
@@ -475,6 +478,11 @@ const typeColor = { presentiel: "#3C507D", remote: "#5C8A5A", hybride: "#8B6F5E"
                     <FiClock size={13} style={{ color: colors.gold }} />
                     {offer.days_left === "Closed" ? "Closed" : offer.days_left === null ? "No deadline" : `${offer.days_left} days left`}
                   </span>
+                  {(offer.start_date || offer.end_date) && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#999" }}>
+                      📅 {offer.start_date || "?"} → {offer.end_date || "?"}
+                    </span>
+                  )}
 
                   {/* Action buttons */}
                   <div style={{ marginLeft: "auto", display: "flex", gap: "12px", alignItems: "center" }}>
@@ -550,10 +558,12 @@ const typeColor = { presentiel: "#3C507D", remote: "#5C8A5A", hybride: "#8B6F5E"
 
             {/* Form fields */}
             {[
-              { name: "title",       label: "JOB TITLE",   placeholder: "Frontend Developer Intern", type: "text" },
-              { name: "wilaya",      label: "WILAYA",       placeholder: "Alger",                     type: "text" },
-              { name: "skills",      label: "SKILLS",       placeholder: "React, Python, Django...",  type: "text" },
-              { name: "deadline",    label: "DEADLINE",     placeholder: "",                          type: "date" },
+              { name: "title",       label: "JOB TITLE",      placeholder: "Frontend Developer Intern", type: "text" },
+              { name: "wilaya",      label: "WILAYA",          placeholder: "Alger",                     type: "text" },
+              { name: "skills",      label: "SKILLS",          placeholder: "React, Python, Django...",  type: "text" },
+              { name: "deadline",    label: "APPLICATION DEADLINE", placeholder: "",                     type: "date" },
+              { name: "start_date",  label: "INTERNSHIP START DATE", placeholder: "",                    type: "date" },
+              { name: "end_date",    label: "INTERNSHIP END DATE",   placeholder: "",                    type: "date" },
             ].map(field => (
               <div key={field.name} style={{ marginBottom: "18px" }}>
                 <label style={{ display: "block", fontSize: "11px", color: colors.navyDark, letterSpacing: "1px", marginBottom: "6px", fontWeight: "bold" }}>
