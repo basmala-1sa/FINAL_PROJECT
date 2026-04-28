@@ -37,8 +37,9 @@ class OfferSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'skills',
             'wilaya', 'type', 'is_active', 'created_at',
             'deadline', 'days_left',
+            'start_date', 'end_date',
             'applicants_count', 'company_name', 'company_location',
-            'views_count'       # ← ADD THIS
+            'views_count'
         ]
         read_only_fields = ['id', 'created_at', 'applicants_count', 'days_left', 'views_count']
 
@@ -67,6 +68,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
     wilaya         = serializers.CharField(source='offer.wilaya', read_only=True)
     agreement_id   = serializers.SerializerMethodField()
     has_reviewed   = serializers.SerializerMethodField()
+    offer_start_date = serializers.DateField(source='offer.start_date', read_only=True)
+    offer_end_date   = serializers.DateField(source='offer.end_date', read_only=True)
 
     class Meta:
         model = Application
@@ -74,6 +77,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'id', 'student_name', 'student_skills', 'student_email',
             'student_github', 'offer_title', 'status', 'applied_at',
             'company_id', 'company_name', 'wilaya', 'agreement_id', 'has_reviewed',
+            'offer_start_date', 'offer_end_date',
         ]
 
     def get_student_name(self, obj):

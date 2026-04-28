@@ -796,6 +796,36 @@ def apply_to_offer(request):
     if Application.objects.filter(student=student, offer=offer).exists():
         return Response({'error': 'You already applied to this offer'}, status=400)
 
+    # ── Overlap check ──────────────────────────────────────────────────────────
+    # Block if the student already has a pending/accepted application for an
+    # offer whose internship period overlaps with the new offer's period.
+    # Two date ranges [A_start, A_end] and [B_start, B_end] overlap when:
+    #   A_start <= B_end  AND  A_end >= B_start
+    # We only run the check when BOTH offers have start_date + end_date set.
+    if offer.start_date and offer.end_date:
+        conflicting = Application.objects.filter(
+            student=student,
+            status__in=['pending', 'accepted'],
+            offer__start_date__isnull=False,
+            offer__end_date__isnull=False,
+            offer__start_date__lte=offer.end_date,
+            offer__end_date__gte=offer.start_date,
+        ).select_related('offer').exclude(offer=offer)
+
+        if conflicting.exists():
+            conflict_titles = ", ".join(
+                [app.offer.title for app in conflicting[:3]]
+            )
+            return Response({
+                'error': (
+                    f"You already have an active application with overlapping dates: "
+                    f'"{conflict_titles}". '
+                    f"You can only apply to internships with non-overlapping periods, "
+                    f"or after one of your existing applications is rejected."
+                )
+            }, status=400)
+    # ──────────────────────────────────────────────────────────────────────────
+
     application = Application.objects.create(
         student      = student,
         offer        = offer,

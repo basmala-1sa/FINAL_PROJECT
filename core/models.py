@@ -93,6 +93,8 @@ class Offer(models.Model):
     is_active   = models.BooleanField(default=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     deadline    = models.DateField(null=True, blank=True)
+    start_date  = models.DateField(null=True, blank=True)   # internship start date
+    end_date    = models.DateField(null=True, blank=True)   # internship end date
     views_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
@@ -232,5 +234,3 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"{self.name} — {self.subject}"
-
-
