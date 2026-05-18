@@ -1643,3 +1643,86 @@ def contact_message(request):
         )
 
     return Response({'message': 'Message received!'}, status=201)
+
+
+
+# ============================================
+#   SUPERADMIN: EDIT UNIVERSITY
+# ============================================
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def superadmin_edit_university(request, university_id):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    try:
+        university = University.objects.get(id=university_id)
+    except University.DoesNotExist:
+        return Response({'error': 'University not found'}, status=404)
+
+    name   = request.data.get('name',   university.name)
+    wilaya = request.data.get('wilaya', university.wilaya)
+    email  = request.data.get('email',  university.email)
+
+    university.name   = name
+    university.wilaya = wilaya
+    university.email  = email
+    university.save()
+
+    return Response({
+        'message': 'University updated successfully!',
+        'id':      university.id,
+        'name':    university.name,
+        'wilaya':  university.wilaya,
+    })
+
+
+# ============================================
+#   SUPERADMIN: DELETE UNIVERSITY
+# ============================================
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def superadmin_delete_university(request, university_id):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    try:
+        university = University.objects.get(id=university_id)
+    except University.DoesNotExist:
+        return Response({'error': 'University not found'}, status=404)
+
+    university.delete()
+    return Response({'message': 'University deleted successfully!'})
+
+
+# ============================================
+#   SUPERADMIN: REVOKE ADMIN
+# ============================================
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def superadmin_revoke_admin(request, admin_id):
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.split(' ')[1] if ' ' in auth_header else ''
+    try:
+        decoded = AccessToken(token)
+        user    = User.objects.get(id=decoded['user_id'], role='superadmin')
+    except Exception:
+        return Response({'error': 'Unauthorized'}, status=401)
+
+    try:
+        admin = User.objects.get(id=admin_id, role='admin')
+    except User.DoesNotExist:
+        return Response({'error': 'Admin not found'}, status=404)
+
+    admin.delete()
+    return Response({'message': 'Admin revoked successfully!'})

@@ -67,4 +67,8 @@ urlpatterns = [
 
     path('superadmin/messages/', superadmin_messages),
     path('contact/', contact_message),
+
+    path('superadmin/universities/<int:university_id>/edit/',   views.superadmin_edit_university,   name='superadmin-edit-university'),
+    path('superadmin/universities/<int:university_id>/delete/', views.superadmin_delete_university, name='superadmin-delete-university'),
+    path('superadmin/admins/<int:admin_id>/revoke/',            views.superadmin_revoke_admin,      name='superadmin-revoke-admin'),
 ]
