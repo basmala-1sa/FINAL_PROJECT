@@ -1594,7 +1594,7 @@ def upload_cv(request):
     student.save()
     return Response({
         'message': 'CV uploaded successfully!',
-        'cv_url': student.cv_file.url if student.cv_file else None)
+        'cv_url': student.cv_file.url if student.cv_file else None
     })
 
 
