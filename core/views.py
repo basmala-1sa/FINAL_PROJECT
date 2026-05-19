@@ -1082,7 +1082,7 @@ def get_my_agreement(request):
     'company_name': agreement.application.offer.company.company_name,
     'company_id':   agreement.application.offer.company.id,
     'validated_at': agreement.validated_at,
-    'pdf_url': agreement.pdf_file.url if agreement.pdf_file else None,
+    'pdf_url':      agreement.pdf_file.url if agreement.pdf_file else None,
     'status':       agreement.status,
 })
 
@@ -1504,13 +1504,13 @@ def get_my_agreements(request):
         company = a.application.offer.company
         already_reviewed = Review.objects.filter(student=student, company=company).exists()
         data.append({
-            'agreement_id':   a.id,
-            'company_id':     company.id,
-            'company_name':   company.company_name,
-            'offer_title':    a.application.offer.title,
-            'pdf_url': a.pdf_file.url if a.pdf_file else None,
-            'has_reviewed':   already_reviewed,
-        })
+    'agreement_id':   a.id,
+    'company_id':     company.id,
+    'company_name':   company.company_name,
+    'offer_title':    a.application.offer.title,
+    'pdf_url':        a.pdf_file.url if a.pdf_file else None,
+    'has_reviewed':   already_reviewed,
+})
 
     return Response(data)
 
