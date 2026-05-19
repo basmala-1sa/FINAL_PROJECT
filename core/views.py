@@ -1082,7 +1082,7 @@ def get_my_agreement(request):
     'company_name': agreement.application.offer.company.company_name,
     'company_id':   agreement.application.offer.company.id,
     'validated_at': agreement.validated_at,
-    'pdf_url':      f'http://127.0.0.1:8000/media/{agreement.pdf_file.name}',
+    'pdf_url': request.build_absolute_uri(f'/media/{agreement.pdf_file.name}'),
     'status':       agreement.status,
 })
 
@@ -1508,7 +1508,7 @@ def get_my_agreements(request):
             'company_id':     company.id,
             'company_name':   company.company_name,
             'offer_title':    a.application.offer.title,
-            'pdf_url':        f'http://127.0.0.1:8000/media/{a.pdf_file.name}' if a.pdf_file else None,
+            'pdf_url': request.build_absolute_uri(f'/media/{a.pdf_file.name}') if a.pdf_file else None,
             'has_reviewed':   already_reviewed,
         })
 
@@ -1594,7 +1594,7 @@ def upload_cv(request):
     student.save()
     return Response({
         'message': 'CV uploaded successfully!',
-        'cv_url': f'http://127.0.0.1:8000/media/{student.cv_file.name}'
+        'cv_url': request.build_absolute_uri(f'/media/{student.cv_file.name}')
     })
 
 
