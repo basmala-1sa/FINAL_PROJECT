@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://127.0.0.1:8000/api/admin/stats/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/admin/stats/", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();

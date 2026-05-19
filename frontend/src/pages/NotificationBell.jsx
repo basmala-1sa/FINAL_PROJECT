@@ -33,7 +33,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/notifications/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/notifications/", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -48,7 +48,7 @@ export default function NotificationBell() {
     setOpen(!open);
     if (!open && unread > 0) {
       // mark as read when opening
-      await fetch("http://127.0.0.1:8000/api/notifications/read/", {
+      await fetch("https://final-project-rdr8.onrender.com/api/notifications/read/", {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -178,7 +178,7 @@ export default function NotificationBell() {
 <div style={{ flex: 1 }}>
   <div style={{ fontSize: "13px", color: colors.navyDark, lineHeight: 1.5, marginBottom: "4px" }}>
     {n.message.includes("/media/") ? n.message.split("Download your PDF:")[0] : n.message}
-    {n.message.includes("/media/") && <a href={"http://127.0.0.1:8000" + n.message.split("Download your PDF:")[1]?.trim()} target="_blank" rel="noreferrer" style={{ color: colors.gold, fontWeight: "bold", display: "block", marginTop: "4px" }}>✦ Download Convention de Stage PDF</a>}
+    {n.message.includes("/media/") && <a href={"https://final-project-rdr8.onrender.com" + n.message.split("Download your PDF:")[1]?.trim()} target="_blank" rel="noreferrer" style={{ color: colors.gold, fontWeight: "bold", display: "block", marginTop: "4px" }}>✦ Download Convention de Stage PDF</a>}
   </div>
                     <div style={{ fontSize: "11px", color: "#bbb" }}>
                       {timeAgo(n.created_at)}

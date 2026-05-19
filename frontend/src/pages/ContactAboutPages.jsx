@@ -52,7 +52,7 @@ export function ContactPage() {
   const handleSubmit = async () => {
   if (!form.name || !form.email || !form.message) return;
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/contact/", {
+    const res = await fetch("https://final-project-rdr8.onrender.com/api/contact/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),

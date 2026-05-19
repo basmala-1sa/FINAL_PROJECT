@@ -114,7 +114,7 @@ export default function SearchOffers() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://127.0.0.1:8000/api/offers/", { headers: { "Authorization": `Bearer ${token}` } })
+    fetch("https://final-project-rdr8.onrender.com/api/offers/", { headers: { "Authorization": `Bearer ${token}` } })
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data)) {
@@ -132,7 +132,7 @@ export default function SearchOffers() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://127.0.0.1:8000/api/student/saved-offers/", { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } })
+    fetch("https://final-project-rdr8.onrender.com/api/student/saved-offers/", { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } })
     .then(res => res.json())
     .then(data => { if (Array.isArray(data)) setSaved(data.map(s => s.offer_id)); })
     .catch(() => {});
@@ -160,7 +160,7 @@ export default function SearchOffers() {
     setSubmitting(true); setModalError("");
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/student/apply/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/student/apply/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ offer_id: coverModal, cover_letter: coverLetter }),
@@ -182,7 +182,7 @@ export default function SearchOffers() {
   const handleSave = async (offerId) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/student/save-offer/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/student/save-offer/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ offer_id: offerId }),

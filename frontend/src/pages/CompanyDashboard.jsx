@@ -42,13 +42,13 @@ useEffect(() => {
         try {
             // get offers — use token, no user_id needed
             const offersRes = await fetch(
-                "http://127.0.0.1:8000/api/company/offers/",
+                "https://final-project-rdr8.onrender.com/api/company/offers/",
                 { headers: { "Authorization": `Bearer ${token}` } }
             )
             const offers = await offersRes.json()
 
             // get applicants — no body on GET
-            const appsRes = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+            const appsRes = await fetch("https://final-project-rdr8.onrender.com/api/company/applicants/", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",

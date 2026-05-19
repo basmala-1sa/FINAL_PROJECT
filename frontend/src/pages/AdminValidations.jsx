@@ -42,7 +42,7 @@ export default function AdminValidations() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token")
-const res = await fetch("http://127.0.0.1:8000/api/admin/pending/", {
+const res = await fetch("https://final-project-rdr8.onrender.com/api/admin/pending/", {
     headers: { "Authorization": `Bearer ${token}` }
 });
       const data = await res.json();
@@ -57,7 +57,7 @@ const res = await fetch("http://127.0.0.1:8000/api/admin/pending/", {
   const handleValidate = async (applicationId) => {
     const token = localStorage.getItem("token")
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/admin/validate/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/admin/validate/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         
@@ -83,7 +83,7 @@ const res = await fetch("http://127.0.0.1:8000/api/admin/pending/", {
     const token = localStorage.getItem("token") 
     if (!reason.trim()) return;
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/admin/reject/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/admin/reject/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({

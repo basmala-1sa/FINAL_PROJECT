@@ -93,7 +93,7 @@ export default function Register() {
   const fieldProps = { form, set, focused, focus, blur };
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/universities/")
+    fetch("https://final-project-rdr8.onrender.com/api/universities/")
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setUniversities(data); })
       .catch(() => {});
@@ -124,7 +124,7 @@ export default function Register() {
         role:          form.role,
         university_id: form.role === "student" ? form.university : null,
       };
-      const res  = await fetch("http://127.0.0.1:8000/api/register/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/register/", {
         method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body),
       });
       const data = await res.json();

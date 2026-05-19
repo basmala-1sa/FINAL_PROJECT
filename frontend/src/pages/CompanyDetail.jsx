@@ -24,7 +24,7 @@ export default function CompanyDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/company/${id}/profile/`)
+    fetch(`https://final-project-rdr8.onrender.com/api/company/${id}/profile/`)
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

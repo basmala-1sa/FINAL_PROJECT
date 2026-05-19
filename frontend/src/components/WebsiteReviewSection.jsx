@@ -117,7 +117,7 @@ export default function WebsiteReviewSection() {
 
   const fetchReviews = async () => {
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/website-reviews/");
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/website-reviews/");
       const data = await res.json();
       setReviews(data.reviews || []);
       setAvg(data.average_rating || 0);
@@ -138,7 +138,7 @@ export default function WebsiteReviewSection() {
     if (!comment.trim()) return setMsg({ type: "error", text: "Please write something!" });
     setLoading(true);
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/website-reviews/add/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/website-reviews/add/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ rating, comment }),

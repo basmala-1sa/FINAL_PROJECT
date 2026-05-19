@@ -44,7 +44,7 @@ useEffect(() => {
     const fetchProfile = async () => {
         try {
           const token = localStorage.getItem("token") 
-            const res = await fetch("http://127.0.0.1:8000/api/company/profile/", {
+            const res = await fetch("https://final-project-rdr8.onrender.com/api/company/profile/", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -73,7 +73,7 @@ const handleSave = async () => {
     setError("")
     try {
       const token = localStorage.getItem("token")
-        const res = await fetch("http://127.0.0.1:8000/api/company/profile/", {
+        const res = await fetch("https://final-project-rdr8.onrender.com/api/company/profile/", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",

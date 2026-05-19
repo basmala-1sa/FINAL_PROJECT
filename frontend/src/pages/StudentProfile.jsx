@@ -124,7 +124,7 @@ setSaving(false)
     const formData = new FormData();
     formData.append("cv_file", cvFile);
     try {
-        const res = await fetch("http://127.0.0.1:8000/api/student/upload-cv/", {
+        const res = await fetch("https://final-project-rdr8.onrender.com/api/student/upload-cv/", {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}` },
             body: formData,
@@ -145,7 +145,7 @@ setSaving(false)
 const [universities, setUniversities] = useState([]);
 
 useEffect(() => {
-  fetch("http://127.0.0.1:8000/api/universities/")
+  fetch("https://final-project-rdr8.onrender.com/api/universities/")
     .then(res => res.json())
     .then(data => { if (Array.isArray(data)) setUniversities(data); })
     .catch(() => {});

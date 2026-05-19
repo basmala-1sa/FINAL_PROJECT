@@ -25,7 +25,7 @@ useEffect(() => { setTimeout(() => setVisible(true), 100); }, []);
 // fetch real data from backend
 useEffect(() => {
   // fetch applications
-  fetch("http://127.0.0.1:8000/api/student/applications/", {
+  fetch("https://final-project-rdr8.onrender.com/api/student/applications/", {
     headers: { "Authorization": `Bearer ${token}` }
   })
     .then(r => r.json())

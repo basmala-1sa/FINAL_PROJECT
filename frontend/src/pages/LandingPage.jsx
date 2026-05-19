@@ -569,8 +569,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     const t = setTimeout(() => setTitleVisible(true), 150);
-    fetch("http://127.0.0.1:8000/api/public/companies/").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCompanies(d); }).catch(()=>{});
-    fetch("http://127.0.0.1:8000/api/public/reviews/").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setReviews(d); }).catch(()=>{});
+    fetch("https://final-project-rdr8.onrender.com/api/public/companies/").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCompanies(d); }).catch(()=>{});
+    fetch("https://final-project-rdr8.onrender.com/api/public/reviews/").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setReviews(d); }).catch(()=>{});
     return () => clearTimeout(t);
   }, []);
 

@@ -21,7 +21,7 @@ export default function MyApplications() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://127.0.0.1:8000/api/student/agreement/", {
+    fetch("https://final-project-rdr8.onrender.com/api/student/agreement/", {
       headers: { "Authorization": `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -65,7 +65,7 @@ export default function MyApplications() {
     if (!token) { setReviewMsg("❌ You are not logged in."); return; }
     setReviewLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/student/review/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/student/review/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({

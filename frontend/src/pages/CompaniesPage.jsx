@@ -112,7 +112,7 @@ function ReviewsModal({ company, onClose }) {
 
   useEffect(() => {
     if (!company) return;
-    fetch(`http://127.0.0.1:8000/api/public/companies/${company.id}/reviews/`)
+    fetch(`https://final-project-rdr8.onrender.com/api/public/companies/${company.id}/reviews/`)
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setReviews(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -185,7 +185,7 @@ export default function CompaniesPage() {
   const [heroRef, heroVisible]    = useReveal();
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/public/companies/")
+    fetch("https://final-project-rdr8.onrender.com/api/public/companies/")
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) { setCompanies(d); setFiltered(d); } setLoading(false); })
       .catch(() => setLoading(false));

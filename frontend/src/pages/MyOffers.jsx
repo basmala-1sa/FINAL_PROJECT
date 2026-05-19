@@ -50,7 +50,7 @@ const user_id = localStorage.getItem("user_id")
 useEffect(() => {
   const fetchOffers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/company/offers/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/company/offers/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +92,7 @@ const openEdit = (offer) => {
 const handleSave = async () => {
   try {
     if (editingOffer) {
-      const res = await fetch(`http://127.0.0.1:8000/api/offers/${editingOffer.id}/manage/`, {
+      const res = await fetch(`https://final-project-rdr8.onrender.com/api/offers/${editingOffer.id}/manage/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -109,7 +109,7 @@ const handleSave = async () => {
         alert("Edit failed: " + JSON.stringify(data))
       }
     } else {
-      const res = await fetch("http://127.0.0.1:8000/api/company/offers/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/company/offers/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,7 +133,7 @@ const handleSave = async () => {
 }
 const handleDelete = async (id) => {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/offers/${id}/manage/`, {
+    const res = await fetch(`https://final-project-rdr8.onrender.com/api/offers/${id}/manage/`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -151,7 +151,7 @@ const handleDelete = async (id) => {
 }
 const handleToggle = async (id) => {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/offers/${id}/manage/`, {
+    const res = await fetch(`https://final-project-rdr8.onrender.com/api/offers/${id}/manage/`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

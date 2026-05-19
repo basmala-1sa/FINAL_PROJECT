@@ -25,7 +25,7 @@ function RecentActivity({ token, colors }) {
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/superadmin/activity/", {
+    fetch("https://final-project-rdr8.onrender.com/api/superadmin/activity/", {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(r => r.json())
@@ -143,7 +143,7 @@ export default function SuperAdminDashboard() {
 
   const fetchUniversities = async () => {
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/superadmin/universities/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/superadmin/universities/", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -153,7 +153,7 @@ export default function SuperAdminDashboard() {
 
   const fetchAdmins = async () => {
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/superadmin/admins/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/superadmin/admins/", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -163,7 +163,7 @@ export default function SuperAdminDashboard() {
 
   const fetchMessages = async () => {
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/superadmin/messages/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/superadmin/messages/", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -182,7 +182,7 @@ export default function SuperAdminDashboard() {
   const handleAddUniversity = async () => {
     if (!uniForm.name || !uniForm.wilaya) return showMsg("❌ Name and wilaya are required!");
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/superadmin/universities/add/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/superadmin/universities/add/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(uniForm),
@@ -204,7 +204,7 @@ export default function SuperAdminDashboard() {
   const handleEditUniversity = async () => {
     if (!editUniForm.name || !editUniForm.wilaya) return showMsg("❌ Name and wilaya are required!");
     try {
-      const res  = await fetch(`http://127.0.0.1:8000/api/superadmin/universities/${editUniForm.id}/edit/`, {
+      const res  = await fetch(`https://final-project-rdr8.onrender.com/api/superadmin/universities/${editUniForm.id}/edit/`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(editUniForm),
@@ -229,7 +229,7 @@ export default function SuperAdminDashboard() {
       message: `Delete university "${name}"? This cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/superadmin/universities/${id}/delete/`, {
+          const res = await fetch(`https://final-project-rdr8.onrender.com/api/superadmin/universities/${id}/delete/`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${token}` },
           });
@@ -249,7 +249,7 @@ export default function SuperAdminDashboard() {
 
   const handleToggleUniversity = async (id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/superadmin/universities/${id}/toggle/`, {
+      const res = await fetch(`https://final-project-rdr8.onrender.com/api/superadmin/universities/${id}/toggle/`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` },
       });
@@ -261,7 +261,7 @@ export default function SuperAdminDashboard() {
     if (!adminForm.full_name || !adminForm.email || !adminForm.password || !adminForm.university_id)
       return showMsg("❌ All fields are required!");
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/superadmin/admins/create/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/superadmin/admins/create/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(adminForm),
@@ -287,7 +287,7 @@ export default function SuperAdminDashboard() {
       message: `Revoke admin "${name}"? This cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/superadmin/admins/${id}/revoke/`, {
+          const res = await fetch(`https://final-project-rdr8.onrender.com/api/superadmin/admins/${id}/revoke/`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${token}` },
           });

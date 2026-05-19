@@ -40,7 +40,7 @@ export default function Applicants() {
   const fetchApplicants = async () => {
     const token = localStorage.getItem("token")
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/company/applicants/", {
+      const res = await fetch("https://final-project-rdr8.onrender.com/api/company/applicants/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +61,7 @@ export default function Applicants() {
 }, [])
   const handleDecide = async (id, decision) => {
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/company/decide/", {
+    const res = await fetch("https://final-project-rdr8.onrender.com/api/company/decide/", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
