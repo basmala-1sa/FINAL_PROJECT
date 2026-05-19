@@ -78,15 +78,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'stageio_db',
-        'USER': 'root',
-        'PASSWORD': '',        
-        'HOST': 'localhost',
-        'PORT': '3307',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'stagio_db_4ewa',
+        'USER': 'stagio_db_4ewa_user',
+        'PASSWORD': '65haAFo2YLYYJGkXh0W7u66qLCaljEKE',
+        'HOST': 'dpg-d85qdrmq1p3s73dptbr0-a',
+        'PORT': '5432',
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
