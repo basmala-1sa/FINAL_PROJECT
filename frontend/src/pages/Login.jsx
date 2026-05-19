@@ -140,7 +140,7 @@ export default function Login() {
     if (!form.email || !form.password) return setError("Please fill in all fields.");
     setLoading(true);
     try {
-      const res  = await fetch("http://127.0.0.1:8000/api/login/", {
+      const res  = await fetch("https://final-project-rdr8.onrender.com/api/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
