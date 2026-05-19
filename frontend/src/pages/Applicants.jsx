@@ -99,9 +99,10 @@ export default function Applicants() {
   };
 
   const statusStyle = {
-    pending:  { bg: "rgba(194,160,114,0.12)", color: colors.gold,    border: "rgba(194,160,114,0.3)", label: "PENDING"  },
-    accepted: { bg: "rgba(92,138,90,0.12)",   color: "#5C8A5A",      border: "rgba(92,138,90,0.3)",   label: "ACCEPTED" },
-    refused:  { bg: "rgba(224,85,85,0.10)",   color: "#e05555",      border: "rgba(224,85,85,0.3)",   label: "REFUSED"  },
+    pending:   { bg: "rgba(194,160,114,0.12)", color: colors.gold,    border: "rgba(194,160,114,0.3)", label: "PENDING"   },
+    accepted:  { bg: "rgba(92,138,90,0.12)",   color: "#5C8A5A",      border: "rgba(92,138,90,0.3)",   label: "ACCEPTED"  },
+    refused:   { bg: "rgba(224,85,85,0.10)",   color: "#e05555",      border: "rgba(224,85,85,0.3)",   label: "REFUSED"   },
+    validated: { bg: "rgba(59,130,246,0.10)",  color: "#3B82F6",      border: "rgba(59,130,246,0.3)",  label: "VALIDATED" },
   };
 
   return (
@@ -334,7 +335,7 @@ export default function Applicants() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {filtered.map((app, i) => {
-              const s = statusStyle[app.status];
+             const s = statusStyle[app.status] || { bg: "#f5f5f5", color: "#999", border: "#ddd", label: app.status?.toUpperCase() || "UNKNOWN" };
               return (
                 <div key={app.id} className="card" style={{
                   background: "#fff", borderRadius: "16px", padding: "28px 32px",
